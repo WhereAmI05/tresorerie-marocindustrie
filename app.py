@@ -58,6 +58,7 @@ st.markdown("""
         transition: all 0.2s ease;
         border: 1px solid rgba(0,0,0,0.04);
         box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        margin-bottom: 16px;
     }
     
     .kpi-card:hover {
@@ -85,6 +86,7 @@ st.markdown("""
         border-radius: 20px;
         border: 1px solid rgba(0,0,0,0.04);
         overflow: hidden;
+        margin-bottom: 20px;
     }
     
     .insight-header {
@@ -228,9 +230,17 @@ st.markdown("""
         color: #0a2540;
     }
     
+    .espace-entre-cartes {
+        margin-bottom: 24px;
+    }
+    
     hr {
         margin: 24px 0;
         border-color: #eef2f6;
+    }
+    
+    .row-spacing {
+        margin-bottom: 20px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -366,6 +376,7 @@ with st.sidebar:
     with st.expander("Voir les hypothèses"):
         st.markdown(f"""
         **Hypothèses financières**
+        
         | Paramètre | Valeur |
         |-----------|--------|
         | Solde initial | 120 000 MAD |
@@ -427,6 +438,9 @@ with onglets[0]:
         </div>
         """, unsafe_allow_html=True)
     
+    # Espacement
+    st.markdown('<div class="row-spacing"></div>', unsafe_allow_html=True)
+    
     col1, col2 = st.columns(2)
     
     with col1:
@@ -452,6 +466,8 @@ with onglets[0]:
             </div>
         </div>
         """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="row-spacing"></div>', unsafe_allow_html=True)
     
     st.markdown("#### Évolution du solde")
     fig1 = go.Figure()
@@ -494,8 +510,7 @@ with onglets[0]:
 with onglets[1]:
     st.markdown("#### Historique des transactions")
     
-    # Filtres
-    col1, col2, col3 = st.columns([2, 2, 1])
+    col1, col2 = st.columns([2, 2])
     with col1:
         filtre_type = st.selectbox("Filtrer par type", ["Tous", "entree", "sortie"])
     with col2:
@@ -519,14 +534,15 @@ with onglets[1]:
     
     st.write(df_affichage.to_html(escape=False, index=False), unsafe_allow_html=True)
     
-    # Bouton export CSV
-    csv_transactions = convert_df_to_csv(st.session_state.transactions)
-    st.download_button(
-        label="Télécharger les transactions (CSV)",
-        data=csv_transactions,
-        file_name="transactions.csv",
-        mime="text/csv"
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        csv_transactions = convert_df_to_csv(st.session_state.transactions)
+        st.download_button(
+            label="Télécharger les transactions (CSV)",
+            data=csv_transactions,
+            file_name="transactions.csv",
+            mime="text/csv"
+        )
     
     st.markdown("---")
     st.markdown("#### Ajouter une transaction")
@@ -576,7 +592,6 @@ with onglets[2]:
     aujourdhui = pd.Timestamp(datetime.now().date())
     seuil_grosse = st.session_state.seuil_grosse_echeance
     
-    # Alertes
     retards = ech[ech["statut"] == "en_retard"]
     for _, row in retards.iterrows():
         st.markdown(f"""
@@ -597,7 +612,6 @@ with onglets[2]:
         </div>
         """, unsafe_allow_html=True)
     
-    # Filtres
     col1, col2 = st.columns(2)
     with col1:
         filtre_type_ech = st.selectbox("Filtrer par type", ["Tous", "a_encaisser", "a_payer"])
@@ -620,14 +634,15 @@ with onglets[2]:
     
     st.write(ech_affichage.to_html(escape=False, index=False), unsafe_allow_html=True)
     
-    # Bouton export CSV
-    csv_echeances = convert_df_to_csv(st.session_state.echeances)
-    st.download_button(
-        label="Télécharger les échéances (CSV)",
-        data=csv_echeances,
-        file_name="echeances.csv",
-        mime="text/csv"
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        csv_echeances = convert_df_to_csv(st.session_state.echeances)
+        st.download_button(
+            label="Télécharger les échéances (CSV)",
+            data=csv_echeances,
+            file_name="echeances.csv",
+            mime="text/csv"
+        )
     
     total_encaisser = ech[ech["type"] == "a_encaisser"]["montant"].sum()
     total_payer = ech[ech["type"] == "a_payer"]["montant"].abs().sum()
@@ -677,8 +692,10 @@ with onglets[3]:
     donnees_prevision = st.session_state.echeances.copy()
     donnees_prevision["semaine"] = donnees_prevision["date_echeance"].dt.strftime("S%W")
     
+    # CORRECTION DE L'ERREUR : on calcule d'abord les sommes, puis on applique abs()
     encaissements_hebdo = donnees_prevision[donnees_prevision["type"] == "a_encaisser"].groupby("semaine")["montant"].sum()
-    decaissements_hebdo = donnees_prevision[donnees_prevision["type"] == "a_payer"].groupby("semaine")["montant"].abs().sum()
+    decaissements_hebdo_temp = donnees_prevision[donnees_prevision["type"] == "a_payer"].groupby("semaine")["montant"].sum()
+    decaissements_hebdo = decaissements_hebdo_temp.abs()
     
     toutes_semaines = sorted(set(encaissements_hebdo.index) | set(decaissements_hebdo.index))
     toutes_semaines = toutes_semaines[:8]
@@ -741,14 +758,15 @@ with onglets[3]:
         df_affichage_prev[col] = df_affichage_prev[col].apply(lambda x: f"{x:,.0f} MAD")
     st.dataframe(df_affichage_prev, use_container_width=True)
     
-    # Bouton export CSV prévisions
-    csv_previsions = convert_df_to_csv(df_prevision)
-    st.download_button(
-        label="Télécharger les prévisions (CSV)",
-        data=csv_previsions,
-        file_name="previsions.csv",
-        mime="text/csv"
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        csv_previsions = convert_df_to_csv(df_prevision)
+        st.download_button(
+            label="Télécharger les prévisions (CSV)",
+            data=csv_previsions,
+            file_name="previsions.csv",
+            mime="text/csv"
+        )
     
     col1, col2, col3 = st.columns(3)
     col1.metric("Solde minimum projeté", f"{df_prevision['Solde Cumule'].min():,.0f} MAD")
