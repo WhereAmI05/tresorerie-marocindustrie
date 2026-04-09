@@ -5,10 +5,10 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
 st.set_page_config(
-    page_title="MarocIndustrie - Treasury",
+    page_title="MarocIndustrie - Treasury Management",
     page_icon="🏭",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # ==================== DESIGN SYSTEM ULTRA PREMIUM ====================
@@ -56,13 +56,6 @@ st.markdown("""
         border-radius: 40px;
         font-size: 12px;
         color: #2c7da0;
-    }
-    
-    /* Main Container */
-    .main-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 24px;
     }
     
     /* KPI Cards Modern */
@@ -187,14 +180,6 @@ st.markdown("""
         color: #166534;
     }
     
-    /* Data Tables */
-    .dataframe-container {
-        background: white;
-        border-radius: 20px;
-        padding: 4px;
-        border: 1px solid #eef2f6;
-    }
-    
     /* Positive/Negative amounts */
     .positive-amount {
         color: #10b981;
@@ -229,7 +214,7 @@ st.markdown("""
         color: white;
     }
     
-    /* Sidebar */
+    /* Sidebar - Expandable/Collapsible */
     [data-testid="stSidebar"] {
         background: white;
         border-right: 1px solid #eef2f6;
@@ -245,6 +230,7 @@ st.markdown("""
         font-size: 13px;
         font-weight: 500;
         transition: all 0.2s;
+        width: 100%;
     }
     
     .stButton > button:hover {
@@ -252,27 +238,54 @@ st.markdown("""
         transform: translateY(-1px);
     }
     
-    /* Form inputs */
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div,
-    .stDateInput > div > div,
-    .stNumberInput > div > div {
-        border-radius: 12px;
-        border-color: #e2e8f0;
+    /* Expander for hypotheses */
+    .streamlit-expanderHeader {
+        font-size: 13px;
+        font-weight: 500;
+        color: #0a2540;
     }
     
     hr {
         margin: 24px 0;
         border-color: #eef2f6;
     }
+    
+    /* Parameter cards in sidebar */
+    .param-card {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 16px;
+        margin: 12px 0;
+        border: 1px solid #eef2f6;
+    }
+    
+    .param-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #6b7a8a;
+        margin-bottom: 8px;
+    }
+    
+    .param-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0a2540;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ==================== CONFIGURATION ====================
+# Initialize session state for thresholds
 if "seuil_alerte" not in st.session_state:
     st.session_state.seuil_alerte = 50000
 if "seuil_grosse_echeance" not in st.session_state:
     st.session_state.seuil_grosse_echeance = 30000
+if "monthly_salary" not in st.session_state:
+    st.session_state.monthly_salary = 45000
+if "monthly_rent" not in st.session_state:
+    st.session_state.monthly_rent = 8000
+if "monthly_cnss" not in st.session_state:
+    st.session_state.monthly_cnss = 9200
 
 # ==================== DATA LOADING ====================
 @st.cache_data
@@ -345,43 +358,129 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ==================== SIDEBAR ====================
+# ==================== SIDEBAR WITH CLICKABLE PARAMETERS ====================
 with st.sidebar:
-    st.markdown("### Settings")
+    st.markdown("### ⚙️ Parameters")
     st.markdown("---")
     
+    # Current cash display
     current_balance = st.session_state.transactions["solde_cumule"].iloc[-1]
-    st.metric("Current Cash", f"{current_balance:,.0f} MAD")
+    st.markdown(f"""
+    <div class="param-card">
+        <div class="param-label">Current Cash Position</div>
+        <div class="param-value">{current_balance:,.0f} MAD</div>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("---")
-    st.markdown("**Alert Thresholds**")
+    st.markdown("#### Alert Thresholds")
     
-    new_threshold = st.number_input(
+    # Alert threshold slider (clickable)
+    new_threshold = st.slider(
         "Alert Threshold (MAD)",
         min_value=10000,
-        max_value=200000,
+        max_value=150000,
         value=st.session_state.seuil_alerte,
-        step=5000
+        step=5000,
+        help="When balance falls below this, a critical alert is triggered"
     )
     if new_threshold != st.session_state.seuil_alerte:
         st.session_state.seuil_alerte = new_threshold
         st.cache_data.clear()
         st.rerun()
     
-    new_large = st.number_input(
+    # Large obligation threshold slider
+    new_large = st.slider(
         "Large Obligation Threshold (MAD)",
         min_value=10000,
-        max_value=200000,
+        max_value=100000,
         value=st.session_state.seuil_grosse_echeance,
-        step=5000
+        step=5000,
+        help="Obligations above this amount trigger a warning alert"
     )
     if new_large != st.session_state.seuil_grosse_echeance:
         st.session_state.seuil_grosse_echeance = new_large
         st.cache_data.clear()
         st.rerun()
+    
+    st.markdown("---")
+    st.markdown("#### Company Assumptions")
+    
+    # Editable assumptions
+    col1, col2 = st.columns(2)
+    with col1:
+        new_salary = st.number_input(
+            "Monthly Salary (MAD)",
+            min_value=20000,
+            max_value=100000,
+            value=st.session_state.monthly_salary,
+            step=5000
+        )
+        if new_salary != st.session_state.monthly_salary:
+            st.session_state.monthly_salary = new_salary
+    
+    with col2:
+        new_rent = st.number_input(
+            "Monthly Rent (MAD)",
+            min_value=3000,
+            max_value=30000,
+            value=st.session_state.monthly_rent,
+            step=1000
+        )
+        if new_rent != st.session_state.monthly_rent:
+            st.session_state.monthly_rent = new_rent
+    
+    new_cnss = st.number_input(
+        "Monthly CNSS (MAD)",
+        min_value=3000,
+        max_value=20000,
+        value=st.session_state.monthly_cnss,
+        step=500
+    )
+    if new_cnss != st.session_state.monthly_cnss:
+        st.session_state.monthly_cnss = new_cnss
+    
+    # Reset button
+    st.markdown("---")
+    if st.button("🔄 Reset to Default Values"):
+        st.session_state.seuil_alerte = 50000
+        st.session_state.seuil_grosse_echeance = 30000
+        st.session_state.monthly_salary = 45000
+        st.session_state.monthly_rent = 8000
+        st.session_state.monthly_cnss = 9200
+        st.cache_data.clear()
+        st.rerun()
+    
+    # Hypotheses section (collapsible)
+    with st.expander("📋 View All Hypotheses"):
+        st.markdown("""
+        **Financial Assumptions**
+        | Parameter | Value |
+        |-----------|-------|
+        | Initial Balance | 120,000 MAD |
+        | Alert Threshold | {} MAD |
+        | Large Obligation Threshold | {} MAD |
+        | Monthly Salaries | {} MAD |
+        | Monthly Rent | {} MAD |
+        | Monthly CNSS | {} MAD |
+        | Payment Delay (Clients) | 30-60 days |
+        | Forecast Horizon | 8 weeks |
+        
+        **Technical Assumptions**
+        - Data storage: CSV files
+        - Hosting: Streamlit Cloud
+        - Charts: Plotly interactive
+        - Updates: Real-time on form submit
+        """.format(
+            st.session_state.seuil_alerte,
+            st.session_state.seuil_grosse_echeance,
+            st.session_state.monthly_salary,
+            st.session_state.monthly_rent,
+            st.session_state.monthly_cnss
+        ))
 
 # ==================== MAIN CONTENT ====================
-tabs = st.tabs(["Overview", "Cash Flow", "Schedule", "Forecast"])
+tabs = st.tabs(["📊 Overview", "💰 Cash Flow", "📅 Schedule", "🔮 Forecast"])
 
 # ==================== TAB 1: OVERVIEW ====================
 with tabs[0]:
@@ -507,12 +606,21 @@ with tabs[1]:
     df_flow = st.session_state.transactions.copy()
     df_display = df_flow.copy()
     df_display["date"] = df_display["date"].dt.strftime("%d/%m/%Y")
-    df_display["montant_formatted"] = df_display["montant"].apply(lambda x: f"{x:,.0f} MAD")
-    df_display["color_class"] = df_display["type"].apply(lambda x: "positive-amount" if x == "entree" else "negative-amount")
-    df_display = df_display[["date", "type", "categorie", "description", "montant_formatted", "solde_cumule"]]
+    
+    # Apply colors to amounts
+    def format_amount(row):
+        amount = row["montant"]
+        if row["type"] == "entree":
+            return f'<span class="positive-amount">{amount:,.0f} MAD</span>'
+        else:
+            return f'<span class="negative-amount">{amount:,.0f} MAD</span>'
+    
+    df_display["Amount"] = df_flow.apply(format_amount, axis=1)
+    df_display["Balance"] = df_flow["solde_cumule"].apply(lambda x: f"{x:,.0f} MAD")
+    df_display = df_display[["date", "type", "categorie", "description", "Amount", "Balance"]]
     df_display.columns = ["Date", "Type", "Category", "Description", "Amount", "Balance"]
     
-    st.dataframe(df_display, use_container_width=True, height=450)
+    st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
     
     st.markdown("---")
     st.markdown("#### Record New Transaction")
@@ -566,8 +674,8 @@ with tabs[2]:
     for _, row in overdue.iterrows():
         st.markdown(f"""
         <div class="alert-warning">
-            <strong>Overdue Payment</strong><br>
-            {row['tiers']} - {row['description']} - {row['montant']:,.0f} MAD
+            <strong>⚠️ Overdue Payment</strong><br>
+            {row['tiers']} - {row['description']} - <span class="negative-amount">{row['montant']:,.0f} MAD</span>
         </div>
         """, unsafe_allow_html=True)
     
@@ -577,18 +685,21 @@ with tabs[2]:
     for _, row in upcoming_large.iterrows():
         st.markdown(f"""
         <div class="alert-warning">
-            <strong>Large Payment Due Soon</strong><br>
+            <strong>⚠️ Large Payment Due Soon</strong><br>
             {row['tiers']} - {row['montant']:,.0f} MAD on {row['date_echeance'].strftime('%d/%m/%Y')}
         </div>
         """, unsafe_allow_html=True)
     
     ech_display = ech.copy()
     ech_display["date_echeance"] = ech_display["date_echeance"].dt.strftime("%d/%m/%Y")
-    ech_display["montant_formatted"] = ech_display["montant"].apply(lambda x: f"{x:,.0f} MAD")
-    ech_display = ech_display[["date_echeance", "type", "tiers", "description", "montant_formatted", "statut"]]
+    ech_display["Amount"] = ech_display.apply(
+        lambda row: f'<span class="{"positive-amount" if row["type"] == "a_encaisser" else "negative-amount"}">{row["montant"]:,.0f} MAD</span>',
+        axis=1
+    )
+    ech_display = ech_display[["date_echeance", "type", "tiers", "description", "Amount", "statut"]]
     ech_display.columns = ["Date", "Type", "Counterparty", "Description", "Amount", "Status"]
     
-    st.dataframe(ech_display, use_container_width=True, height=400)
+    st.write(ech_display.to_html(escape=False, index=False), unsafe_allow_html=True)
     
     total_to_receive = ech[ech["type"] == "a_encaisser"]["montant"].sum()
     total_to_pay = ech[ech["type"] == "a_payer"]["montant"].sum()
@@ -620,7 +731,7 @@ with tabs[2]:
                 "type": new_schedule_type,
                 "tiers": new_schedule_counterparty,
                 "description": new_schedule_description,
-                "montant": new_schedule_amount,
+                "montant": new_schedule_amount if new_schedule_type == "a_encaisser" else -new_schedule_amount,
                 "statut": new_schedule_status
             }])
             
@@ -638,7 +749,7 @@ with tabs[3]:
     forecast_data["week"] = forecast_data["date_echeance"].dt.strftime("W%W")
     
     weekly_inflows = forecast_data[forecast_data["type"] == "a_encaisser"].groupby("week")["montant"].sum()
-    weekly_outflows = forecast_data[forecast_data["type"] == "a_payer"].groupby("week")["montant"].sum()
+    weekly_outflows = forecast_data[forecast_data["type"] == "a_payer"].groupby("week")["montant"].abs().sum()
     
     all_weeks = sorted(set(weekly_inflows.index) | set(weekly_outflows.index))
     all_weeks = all_weeks[:8]
@@ -699,9 +810,4 @@ with tabs[3]:
     display_forecast = forecast_df.copy()
     for col in ["Inflows", "Outflows", "Net Flow", "Cumulative Balance"]:
         display_forecast[col] = display_forecast[col].apply(lambda x: f"{x:,.0f} MAD")
-    st.dataframe(display_forecast, use_container_width=True)
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Min Projected Balance", f"{forecast_df['Cumulative Balance'].min():,.0f} MAD")
-    col2.metric("Max Projected Balance", f"{forecast_df['Cumulative Balance'].max():,.0f} MAD")
-    col3.metric("Avg Weekly Net Flow", f"{forecast_df['Net Flow'].mean():,.0f} MAD")
+    st.dataframe(display_forecast
