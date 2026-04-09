@@ -137,15 +137,6 @@ st.markdown("""
         width: auto;
     }
     
-    .alert-card-red {
-        background: #fef2f2;
-        border: 1px solid #fee2e2;
-        border-radius: 14px;
-        padding: 12px 16px;
-        margin-bottom: 16px;
-        color: #991b1b;
-    }
-    
     .positive-amount {
         color: #10b981;
         font-weight: 600;
@@ -256,6 +247,37 @@ st.markdown("""
     .alert-badge-warning {
         background: #fffbeb;
         color: #92400e;
+    }
+    
+    /* Styles pour les lignes du tableau échéancier */
+    .row-encaisser {
+        background-color: rgba(16, 185, 129, 0.05);
+        border-left: 3px solid #10b981;
+    }
+    
+    .row-payer {
+        background-color: rgba(239, 68, 68, 0.05);
+        border-left: 3px solid #ef4444;
+    }
+    
+    .badge-encaisser {
+        background-color: #10b981;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 40px;
+        font-size: 11px;
+        font-weight: 500;
+        display: inline-block;
+    }
+    
+    .badge-payer {
+        background-color: #ef4444;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 40px;
+        font-size: 11px;
+        font-weight: 500;
+        display: inline-block;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -518,7 +540,6 @@ with onglets[0]:
 
 # ==================== ONGLET 2: FLUX DE TRESORERIE ====================
 with onglets[1]:
-    # Formulaire EN HAUT
     st.markdown("""
     <div class="form-container">
         <div class="form-title">Ajouter une transaction</div>
@@ -599,7 +620,6 @@ with onglets[1]:
 
 # ==================== ONGLET 3: ECHEANCIER ====================
 with onglets[2]:
-    # Formulaire EN HAUT
     st.markdown("""
     <div class="form-container">
         <div class="form-title">Ajouter une échéance</div>
@@ -646,6 +666,7 @@ with onglets[2]:
     # Alertes sous forme de badges compacts
     retards = ech[ech["statut"] == "en_retard"]
     if len(retards) > 0:
+        st.markdown("**Paiements en retard**")
         cols = st.columns(min(len(retards), 4))
         for idx, (_, row) in enumerate(retards.iterrows()):
             with cols[idx % 4]:
@@ -655,6 +676,7 @@ with onglets[2]:
                             (ech["statut"] == "en_attente") & 
                             (abs(ech["montant"]) >= seuil_grosse)]
     if len(echeances_proches) > 0:
+        st.markdown("**Grosses échéances à venir**")
         cols = st.columns(min(len(echeances_proches), 4))
         for idx, (_, row) in enumerate(echeances_proches.iterrows()):
             with cols[idx % 4]:
@@ -672,15 +694,38 @@ with onglets[2]:
     if filtre_statut != "Tous":
         ech_filtre = ech_filtre[ech_filtre["statut"] == filtre_statut]
     
-    ech_filtre["date_echeance"] = ech_filtre["date_echeance"].dt.strftime("%d/%m/%Y")
-    ech_filtre["Montant"] = ech_filtre.apply(
-        lambda row: f'<span class="{"positive-amount" if row["type"] == "a_encaisser" else "negative-amount"}">{abs(row["montant"]):,.0f} MAD</span>',
-        axis=1
-    )
-    ech_affichage = ech_filtre[["date_echeance", "type", "tiers", "description", "Montant", "statut"]]
-    ech_affichage.columns = ["Date", "Type", "Tiers", "Description", "Montant", "Statut"]
+    # Construction du tableau HTML avec distinction visuelle
+    html_table = '<table style="width:100%; border-collapse: collapse;">'
+    html_table += '<thead><tr style="border-bottom: 2px solid #eef2f6; text-align: left;">'
+    html_table += '<th style="padding: 12px 8px;">Date</th>'
+    html_table += '<th style="padding: 12px 8px;">Type</th>'
+    html_table += '<th style="padding: 12px 8px;">Tiers</th>'
+    html_table += '<th style="padding: 12px 8px;">Description</th>'
+    html_table += '<th style="padding: 12px 8px;">Montant</th>'
+    html_table += '<th style="padding: 12px 8px;">Statut</th>'
+    html_table += '</tr></thead><tbody>'
     
-    st.write(ech_affichage.to_html(escape=False, index=False), unsafe_allow_html=True)
+    for _, row in ech_filtre.iterrows():
+        row_class = "row-encaisser" if row["type"] == "a_encaisser" else "row-payer"
+        badge_class = "badge-encaisser" if row["type"] == "a_encaisser" else "badge-payer"
+        badge_text = "À encaisser" if row["type"] == "a_encaisser" else "À payer"
+        amount_class = "positive-amount" if row["type"] == "a_encaisser" else "negative-amount"
+        
+        statut_text = "En attente" if row["statut"] == "en_attente" else "En retard"
+        statut_color = "#f59e0b" if row["statut"] == "en_retard" else "#10b981"
+        
+        html_table += f'<tr class="{row_class}" style="border-bottom: 1px solid #eef2f6;">'
+        html_table += f'<td style="padding: 12px 8px;">{row["date_echeance"].strftime("%d/%m/%Y")}</td>'
+        html_table += f'<td style="padding: 12px 8px;"><span class="{badge_class}">{badge_text}</span></td>'
+        html_table += f'<td style="padding: 12px 8px; font-weight: 500;">{row["tiers"]}</td>'
+        html_table += f'<td style="padding: 12px 8px; color: #6b7a8a;">{row["description"]}</td>'
+        html_table += f'<td style="padding: 12px 8px;" class="{amount_class}">{abs(row["montant"]):,.0f} MAD</td>'
+        html_table += f'<td style="padding: 12px 8px;"><span style="background: {statut_color}; color: white; padding: 4px 12px; border-radius: 40px; font-size: 11px;">{statut_text}</span></td>'
+        html_table += '</tr>'
+    
+    html_table += '</tbody></table>'
+    
+    st.markdown(html_table, unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
