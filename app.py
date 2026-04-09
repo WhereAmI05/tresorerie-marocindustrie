@@ -5,260 +5,198 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
 st.set_page_config(
-    page_title="MarocIndustrie - Treasury Management",
-    page_icon="⚡",
+    page_title="MarocIndustrie - Gestion de Trésorerie",
+    page_icon=":factory:",
     layout="wide"
 )
 
-# ==================== DESIGN SYSTEM PREMIUM ====================
+# ==================== STYLE CSS ====================
 st.markdown("""
 <style>
-    /* Base */
     .stApp {
-        background-color: #f5f7fc;
+        background-color: #f8fafc;
     }
     
-    /* Sidebar Premium */
     [data-testid="stSidebar"] {
         background-color: #ffffff;
-        border-right: 1px solid #e9edf2;
-        box-shadow: 2px 0 12px rgba(0,0,0,0.02);
+        border-right: 1px solid #e2e8f0;
     }
     
     [data-testid="stSidebar"] * {
-        color: #1a2c3e !important;
+        color: #1e293b !important;
     }
     
-    /* Typography */
-    .main-header {
+    .metric-card {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .metric-value {
         font-size: 28px;
         font-weight: 600;
-        color: #0a2540;
-        letter-spacing: -0.02em;
-        margin-bottom: 4px;
+        color: #0f172a;
+        margin-top: 8px;
     }
     
-    .sub-header {
-        font-size: 14px;
-        color: #5c6f87;
-        border-bottom: 1px solid #e9edf2;
-        padding-bottom: 20px;
-        margin-bottom: 24px;
-    }
-    
-    /* KPI Cards Premium */
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
-        margin: 20px 0;
-    }
-    
-    .kpi-card {
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 20px;
-        border: 1px solid #e9edf2;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-        transition: all 0.2s ease;
-    }
-    
-    .kpi-card:hover {
-        border-color: #cbd5e1;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    
-    .kpi-label {
+    .metric-label {
         font-size: 13px;
-        font-weight: 500;
-        color: #5c6f87;
+        color: #64748b;
         text-transform: uppercase;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Cartes pour commentaires et recommandations */
+    .comment-card-critical {
+        background-color: #fef2f2;
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid #fecaca;
+        height: 100%;
+    }
+    
+    .comment-card-warning {
+        background-color: #fffbeb;
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid #fde68a;
+        height: 100%;
+    }
+    
+    .comment-card-success {
+        background-color: #f0fdf4;
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid #bbf7d0;
+        height: 100%;
+    }
+    
+    .comment-card-info {
+        background-color: #eff6ff;
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid #bfdbfe;
+        height: 100%;
+    }
+    
+    .comment-title {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
         margin-bottom: 8px;
     }
     
-    .kpi-value {
-        font-size: 32px;
-        font-weight: 600;
-        color: #0a2540;
-        letter-spacing: -0.01em;
-    }
-    
-    .kpi-trend-up {
-        font-size: 12px;
-        color: #10b981;
-        margin-top: 6px;
-    }
-    
-    .kpi-trend-down {
-        font-size: 12px;
-        color: #ef4444;
-        margin-top: 6px;
-    }
-    
-    /* Insight Cards */
-    .insight-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        margin: 20px 0;
-    }
-    
-    .insight-card {
-        background: #ffffff;
-        border-radius: 16px;
-        border: 1px solid #e9edf2;
-        overflow: hidden;
-    }
-    
-    .insight-header {
-        padding: 16px 20px;
-        border-bottom: 1px solid #e9edf2;
-        background: #fafbfc;
-    }
-    
-    .insight-header h4 {
-        font-size: 14px;
-        font-weight: 600;
-        color: #5c6f87;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        margin: 0;
-    }
-    
-    .insight-body {
-        padding: 20px;
-    }
-    
-    .insight-message {
-        font-size: 15px;
+    .comment-message {
+        font-size: 13px;
         font-weight: 500;
-        color: #1a2c3e;
         margin-bottom: 12px;
-        line-height: 1.4;
     }
     
-    .insight-reco {
-        font-size: 13px;
-        color: #5c6f87;
-        padding-top: 12px;
-        border-top: 1px solid #e9edf2;
+    .comment-recommendation {
+        font-size: 12px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(0,0,0,0.1);
     }
     
-    .insight-reco strong {
-        color: #0a2540;
-    }
-    
-    /* Status Colors */
-    .status-critical {
-        border-left: 3px solid #ef4444;
-    }
-    .status-warning {
-        border-left: 3px solid #f59e0b;
-    }
-    .status-success {
-        border-left: 3px solid #10b981;
-    }
-    .status-info {
-        border-left: 3px solid #3b82f6;
-    }
-    
-    /* Alert Banners */
-    .alert-banner {
-        background: #ffffff;
-        border-radius: 12px;
+    .alert-critical {
+        background-color: #fef2f2;
+        border-left: 4px solid #dc2626;
         padding: 14px 18px;
-        margin-bottom: 16px;
-        border: 1px solid #e9edf2;
-        font-size: 13px;
-    }
-    
-    .alert-banner-critical {
-        background: #fef2f2;
-        border-left: 4px solid #ef4444;
+        border-radius: 8px;
         color: #991b1b;
+        font-size: 14px;
+        margin-bottom: 16px;
     }
     
-    .alert-banner-warning {
-        background: #fffbeb;
+    .alert-warning {
+        background-color: #fffbeb;
         border-left: 4px solid #f59e0b;
+        padding: 14px 18px;
+        border-radius: 8px;
         color: #92400e;
+        font-size: 14px;
+        margin-bottom: 16px;
     }
     
-    /* Tables */
-    .stDataFrame {
-        border: 1px solid #e9edf2 !important;
-        border-radius: 12px !important;
-        overflow: hidden;
+    .alert-success {
+        background-color: #f0fdf4;
+        border-left: 4px solid #22c55e;
+        padding: 14px 18px;
+        border-radius: 8px;
+        color: #166534;
+        font-size: 14px;
+        margin-bottom: 16px;
     }
     
-    /* Tabs */
+    .alert-info {
+        background-color: #eff6ff;
+        border-left: 4px solid #3b82f6;
+        padding: 14px 18px;
+        border-radius: 8px;
+        color: #1e40af;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+    
+    .main-header {
+        font-size: 24px;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 4px;
+        letter-spacing: -0.3px;
+    }
+    
+    .sub-header {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 24px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 16px;
+    }
+    
+    .stButton > button {
+        background-color: #1e293b;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 20px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    
+    .stButton > button:hover {
+        background-color: #334155;
+    }
+    
     .stTabs [data-baseweb="tab-list"] {
         gap: 32px;
-        border-bottom: 1px solid #e9edf2;
-        background: transparent;
+        border-bottom: 1px solid #e2e8f0;
     }
     
     .stTabs [data-baseweb="tab"] {
         font-size: 14px;
         font-weight: 500;
-        color: #5c6f87;
-        padding: 10px 0;
+        color: #64748b;
+        padding: 8px 0;
     }
     
     .stTabs [aria-selected="true"] {
-        color: #0a2540;
-        border-bottom: 2px solid #0a2540;
-    }
-    
-    /* Buttons */
-    .stButton > button {
-        background-color: #0a2540;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 10px 24px;
-        font-size: 13px;
-        font-weight: 500;
-        transition: all 0.2s;
-    }
-    
-    .stButton > button:hover {
-        background-color: #1a3c5e;
-        transform: translateY(-1px);
-    }
-    
-    /* Form inputs */
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div,
-    .stDateInput > div > div,
-    .stNumberInput > div > div {
-        border-radius: 10px;
-        border-color: #e2e8f0;
-    }
-    
-    /* Metrics in sidebar */
-    .sidebar-metric {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 12px 16px;
-        margin: 8px 0;
-    }
-    
-    hr {
-        margin: 20px 0;
-        border-color: #e9edf2;
+        color: #1e293b;
+        border-bottom: 2px solid #1e293b;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== CONFIGURATION ====================
+# ==================== PARAMETRES ====================
 if "seuil_alerte" not in st.session_state:
     st.session_state.seuil_alerte = 50000
 if "seuil_grosse_echeance" not in st.session_state:
     st.session_state.seuil_grosse_echeance = 30000
 
-# ==================== DATA LOADING ====================
+# ==================== CHARGEMENT DES DONNEES ====================
 @st.cache_data
 def load_transactions():
     df = pd.read_csv("transactions.csv", parse_dates=["date"])
@@ -283,582 +221,507 @@ def save_transactions(df):
 def save_echeances(df):
     df.to_csv("echeances.csv", index=False)
 
-# ==================== ANALYTICS ENGINE ====================
-def analyze_cash_position(balance, threshold):
-    """Analyze current cash position"""
-    if balance < threshold:
+# ==================== FONCTIONS D ANALYSE AUTOMATIQUE ====================
+def analyser_tresorerie(solde, seuil):
+    """Analyse automatique de la situation de tresorerie"""
+    if solde < seuil:
         return {
-            "status": "critical",
-            "message": f"Balance at {balance:,.0f} MAD is below {threshold:,} MAD threshold",
-            "recommendation": "Immediate action required: accelerate collections, delay non-essential payments",
-            "action": "Urgent: secure short-term financing"
+            "type": "critical",
+            "titre": "Situation critique",
+            "message": f"Solde actuel de {solde:,.0f} MAD inferieur au seuil de {seuil:,} MAD",
+            "recommandation": "Action urgente : prioriser les encaissements et reporter les depenses non urgentes"
         }
-    elif balance < threshold * 1.5:
+    elif solde < seuil * 1.5:
         return {
-            "status": "warning",
-            "message": f"Balance at {balance:,.0f} MAD is close to {threshold:,} MAD threshold",
-            "recommendation": "Monitor closely: accelerate collections, control discretionary spending",
-            "action": "Prepare contingency plan"
+            "type": "warning",
+            "titre": "Situation fragile",
+            "message": f"Solde de {solde:,.0f} MAD proche du seuil d'alerte de {seuil:,} MAD",
+            "recommandation": "Surveillance renforcee : accelerer les recouvrements et maitriser les depenses"
         }
-    elif balance > threshold * 3:
+    elif solde > seuil * 3:
         return {
-            "status": "success",
-            "message": f"Strong position: {balance:,.0f} MAD, {balance - threshold:,.0f} MAD above threshold",
-            "recommendation": "Consider early debt repayment or strategic investments",
-            "action": "Deploy excess cash efficiently"
-        }
-    else:
-        return {
-            "status": "info",
-            "message": f"Stable position: {balance:,.0f} MAD",
-            "recommendation": "Maintain regular monitoring of cash flows",
-            "action": "Business as usual"
-        }
-
-def analyze_receivables(df_echeances):
-    """Analyze overdue receivables"""
-    overdue = df_echeances[df_echeances["statut"] == "en_retard"]
-    amount = overdue["montant"].sum()
-    count = len(overdue)
-    
-    if count == 0:
-        return {
-            "status": "success",
-            "message": "No overdue receivables",
-            "recommendation": "Collection process is effective",
-            "action": "Maintain current practices"
-        }
-    elif count <= 2:
-        return {
-            "status": "warning",
-            "message": f"{count} overdue invoice(s) totaling {amount:,.0f} MAD",
-            "recommendation": "Contact clients immediately",
-            "action": "Initiate collection process"
+            "type": "success",
+            "titre": "Situation excellente",
+            "message": f"Solde de {solde:,.0f} MAD offre une marge confortable de {solde - seuil:,.0f} MAD",
+            "recommandation": "Opportunite : investissements ou remboursement anticipé envisageables"
         }
     else:
         return {
-            "status": "critical",
-            "message": f"{count} overdue invoices totaling {amount:,.0f} MAD",
-            "recommendation": "Urgent: deploy collection team, review credit terms",
-            "action": "Escalate to management"
+            "type": "info",
+            "titre": "Situation stable",
+            "message": f"Solde de {solde:,.0f} MAD dans la normale",
+            "recommandation": "Poursuivre le suivi regulier des flux de tresorerie"
         }
 
-def analyze_forecast(df_forecast, threshold, initial_balance):
-    """Analyze cash forecast"""
-    if df_forecast.empty:
-        return {
-            "status": "info",
-            "message": "Insufficient data for forecast",
-            "recommendation": "Add more scheduled payments/receipts",
-            "action": "Complete forecast data"
-        }
+def analyser_retards(df_echeances):
+    """Analyse automatique des retards clients"""
+    retards = df_echeances[df_echeances["statut"] == "en_retard"]
+    montant_retards = retards["montant"].sum()
+    nb_retards = len(retards)
     
-    critical_weeks = df_forecast[df_forecast["Cumulative Balance"] < threshold]
-    final_balance = df_forecast["Cumulative Balance"].iloc[-1]
-    
-    if len(critical_weeks) > 0:
-        first_week = critical_weeks.iloc[0]["Week"]
+    if nb_retards == 0:
         return {
-            "status": "critical",
-            "message": f"Liquidity gap forecasted in week {first_week}",
-            "recommendation": f"Secure {abs(final_balance):,.0f} MAD financing or renegotiate payables",
-            "action": "Activate credit line"
+            "type": "success",
+            "titre": "Recouvrement sain",
+            "message": "Aucun retard de paiement client a signaler",
+            "recommandation": "Les delais de paiement sont respectes"
         }
-    elif final_balance < threshold * 1.2:
+    elif nb_retards <= 2:
         return {
-            "status": "warning",
-            "message": f"Tight position ahead: forecasted balance {final_balance:,.0f} MAD",
-            "recommendation": "Control expenses, monitor collections closely",
-            "action": "Prepare mitigation measures"
+            "type": "warning",
+            "titre": "Retards moderes",
+            "message": f"{nb_retards} retard(s) pour un total de {montant_retards:,.0f} MAD",
+            "recommandation": "Relancer rapidement les clients concernes"
         }
     else:
         return {
-            "status": "success",
-            "message": f"Healthy forecast: {final_balance:,.0f} MAD projected",
-            "recommendation": "Position allows for operational flexibility",
-            "action": "Proceed with normal operations"
+            "type": "critical",
+            "titre": "Retards severes",
+            "message": f"{nb_retards} retards representant {montant_retards:,.0f} MAD",
+            "recommandation": "Plan de recouvrement renforce et revision des conditions de credit"
         }
 
-def analyze_upcoming_obligations(df_echeances, threshold):
-    """Analyze upcoming large obligations"""
-    upcoming = df_echeances[
-        (df_echeances["statut"] == "en_attente") & 
-        (df_echeances["montant"].abs() >= threshold)
-    ]
+def analyser_prevision(df_prev, seuil, solde_initial):
+    """Analyse automatique des previsions"""
+    if df_prev.empty:
+        return {
+            "type": "info",
+            "titre": "Donnees insuffisantes",
+            "message": "Aucune echeance enregistree pour la prevision",
+            "recommandation": "Ajouter des echeances pour une prevision plus fiable"
+        }
     
-    if len(upcoming) == 0:
-        return None
+    semaines_critiques = df_prev[df_prev["Solde cumule"] < seuil]
+    solde_final = df_prev["Solde cumule"].iloc[-1]
     
-    total = upcoming["montant"].abs().sum()
-    return {
-        "status": "warning",
-        "message": f"{len(upcoming)} large obligation(s) totaling {total:,.0f} MAD due soon",
-        "recommendation": "Ensure sufficient liquidity for these payments",
-        "action": "Schedule payments strategically"
-    }
+    if len(semaines_critiques) > 0:
+        premiere_semaine = semaines_critiques.iloc[0]["Semaine"]
+        return {
+            "type": "critical",
+            "titre": "Rupture prevue",
+            "message": f"Solde sous le seuil a partir de la semaine {premiere_semaine}",
+            "recommandation": f"Anticiper un besoin de financement de {abs(solde_final):,.0f} MAD"
+        }
+    elif solde_final < seuil * 1.2:
+        return {
+            "type": "warning",
+            "titre": "Tendance negative",
+            "message": f"Solde final prevu de {solde_final:,.0f} MAD, proche du seuil",
+            "recommandation": "Maitriser les depenses et suivre l'evolution des encaissements"
+        }
+    else:
+        return {
+            "type": "success",
+            "titre": "Perspectives favorables",
+            "message": f"Solde final prevu de {solde_final:,.0f} MAD, au-dessus du seuil",
+            "recommandation": "Situation sous controle, poursuivre la gestion rigoureuse"
+        }
 
 # ==================== SIDEBAR ====================
 with st.sidebar:
-    st.markdown("### MAROCINDUSTRIE")
-    st.markdown("#### Treasury Dashboard")
+    st.markdown("### MarocIndustrie SARL")
+    st.markdown("---")
+    st.markdown("**Informations**")
+    st.markdown("Siege : Ain Sebaa, Casablanca")
+    st.markdown("Secteur : Fabrication metallique BTP")
+    st.markdown("Effectif : 12 employes")
     st.markdown("---")
     
-    st.markdown("**Company Profile**")
-    st.markdown("• Ain Sebaa, Casablanca")
-    st.markdown("• Metal Fabrication / BTP")
-    st.markdown("• 12 employees")
-    st.markdown("• ~2.4M MAD annual revenue")
-    
-    st.markdown("---")
-    
-    current_balance = st.session_state.transactions["solde_cumule"].iloc[-1]
-    st.markdown("**Current Cash Position**")
-    if current_balance >= 80000:
-        st.success(f"{current_balance:,.0f} MAD")
-    elif current_balance >= 50000:
-        st.warning(f"{current_balance:,.0f} MAD")
+    solde_actuel = st.session_state.transactions["solde_cumule"].iloc[-1]
+    st.markdown("**Tresorerie actuelle**")
+    if solde_actuel >= 80000:
+        st.success(f"{solde_actuel:,.0f} MAD")
+    elif solde_actuel >= 50000:
+        st.warning(f"{solde_actuel:,.0f} MAD")
     else:
-        st.error(f"{current_balance:,.0f} MAD")
+        st.error(f"{solde_actuel:,.0f} MAD")
     
     st.markdown("---")
-    st.markdown("**Parameters**")
+    st.markdown("**Parametres modifiables**")
     
-    new_threshold = st.number_input(
-        "Alert Threshold (MAD)",
-        min_value=10000,
-        max_value=200000,
+    nouveau_seuil = st.number_input(
+        "Seuil d'alerte (MAD)", 
+        min_value=10000, 
+        max_value=200000, 
         value=st.session_state.seuil_alerte,
         step=5000
     )
-    if new_threshold != st.session_state.seuil_alerte:
-        st.session_state.seuil_alerte = new_threshold
+    if nouveau_seuil != st.session_state.seuil_alerte:
+        st.session_state.seuil_alerte = nouveau_seuil
         st.cache_data.clear()
         st.rerun()
     
-    new_large = st.number_input(
-        "Large Obligation Threshold (MAD)",
-        min_value=10000,
-        max_value=200000,
+    nouveau_seuil_grosse = st.number_input(
+        "Seuil grosse echeance (MAD)", 
+        min_value=10000, 
+        max_value=200000, 
         value=st.session_state.seuil_grosse_echeance,
         step=5000
     )
-    if new_large != st.session_state.seuil_grosse_echeance:
-        st.session_state.seuil_grosse_echeance = new_large
+    if nouveau_seuil_grosse != st.session_state.seuil_grosse_echeance:
+        st.session_state.seuil_grosse_echeance = nouveau_seuil_grosse
         st.cache_data.clear()
         st.rerun()
-    
-    st.markdown("---")
-    st.caption("Data: Jan - Mar 2025")
-    st.caption("Forecast: 8 weeks rolling")
 
 # ==================== HEADER ====================
 st.markdown('<div class="main-header">MarocIndustrie SARL</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Treasury Management Dashboard | Real-time cash monitoring & forecasting</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Tableau de bord de gestion de tresorerie</div>', unsafe_allow_html=True)
 
 # ==================== TABS ====================
-tabs = st.tabs(["Overview", "Cash Flow", "Schedule", "Forecast"])
+tabs = st.tabs(["Dashboard", "Flux de tresorerie", "Echeancier", "Previsions"])
 
-# ==================== TAB 1: OVERVIEW ====================
+# ==================== TAB 1: DASHBOARD ====================
 with tabs[0]:
     df = st.session_state.transactions
-    current_balance = df["solde_cumule"].iloc[-1]
-    total_inflows = df[df["type"] == "entree"]["montant"].sum()
-    total_outflows = df[df["type"] == "sortie"]["montant"].sum()
-    net_cashflow = total_inflows - total_outflows
+    solde_actuel = df["solde_cumule"].iloc[-1]
+    total_entrees = df[df["type"] == "entree"]["montant"].sum()
+    total_sorties = df[df["type"] == "sortie"]["montant"].sum()
     
     ech = st.session_state.echeances
-    threshold = st.session_state.seuil_alerte
-    large_threshold = st.session_state.seuil_grosse_echeance
+    seuil = st.session_state.seuil_alerte
+    seuil_grosse = st.session_state.seuil_grosse_echeance
     
-    # Analyses
-    cash_analysis = analyze_cash_position(current_balance, threshold)
-    receivables_analysis = analyze_receivables(ech)
-    large_obligations = analyze_upcoming_obligations(ech, large_threshold)
+    # Analyses automatiques
+    analyse_treso = analyser_tresorerie(solde_actuel, seuil)
+    analyse_retards = analyser_retards(ech)
     
-    # KPI Row
-    st.markdown('<div class="kpi-grid">', unsafe_allow_html=True)
+    # Affichage des commentaires cote a cote
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        card_class = f"comment-card-{analyse_treso['type']}"
+        st.markdown(f"""
+        <div class="{card_class}">
+            <div class="comment-title">ANALYSE TRESORERIE</div>
+            <div class="comment-message">{analyse_treso['message']}</div>
+            <div class="comment-recommendation"><strong>Recommandation :</strong> {analyse_treso['recommandation']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        card_class = f"comment-card-{analyse_retards['type']}"
+        st.markdown(f"""
+        <div class="{card_class}">
+            <div class="comment-title">ANALYSE RECOUVREMENT</div>
+            <div class="comment-message">{analyse_retards['message']}</div>
+            <div class="comment-recommendation"><strong>Recommandation :</strong> {analyse_retards['recommandation']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Alertes supplementaires si necessaire
+    grosses_echeances = ech[(ech["montant"].abs() >= seuil_grosse) & (ech["statut"] == "en_attente")]
+    if len(grosses_echeances) > 0:
+        total_grosses = grosses_echeances["montant"].abs().sum()
+        st.markdown(f'<div class="alert-warning">Echeances importantes : {len(grosses_echeances)} echeance(s) pour un total de {total_grosses:,.0f} MAD dans les 8 prochaines semaines</div>', unsafe_allow_html=True)
+    
+    # Indicateurs
+    st.markdown("### Indicateurs cles")
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Current Balance</div>
-            <div class="kpi-value">{current_balance:,.0f} MAD</div>
+        <div class="metric-card">
+            <div class="metric-label">Solde actuel</div>
+            <div class="metric-value">{solde_actuel:,.0f} MAD</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Total Inflows (3M)</div>
-            <div class="kpi-value">{total_inflows:,.0f} MAD</div>
+        <div class="metric-card">
+            <div class="metric-label">Total encaissements (3 mois)</div>
+            <div class="metric-value">{total_entrees:,.0f} MAD</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Total Outflows (3M)</div>
-            <div class="kpi-value">{total_outflows:,.0f} MAD</div>
+        <div class="metric-card">
+            <div class="metric-label">Total decaissements (3 mois)</div>
+            <div class="metric-value">{total_sorties:,.0f} MAD</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
-        trend = "up" if net_cashflow > 0 else "down"
+        nb_retards = len(ech[ech["statut"] == "en_retard"])
         st.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Net Cash Flow (3M)</div>
-            <div class="kpi-value">{net_cashflow:,.0f} MAD</div>
-            <div class="kpi-trend-{trend}">{'Positive' if net_cashflow > 0 else 'Negative'} trend</div>
-        </div>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Insights Row
-    st.markdown('<div class="insight-grid">', unsafe_allow_html=True)
-    
-    # Cash Position Insight
-    status_class = f"status-{cash_analysis['status']}"
-    st.markdown(f"""
-    <div class="insight-card {status_class}">
-        <div class="insight-header">
-            <h4>Cash Position Analysis</h4>
-        </div>
-        <div class="insight-body">
-            <div class="insight-message">{cash_analysis['message']}</div>
-            <div class="insight-reco"><strong>Recommendation</strong><br>{cash_analysis['recommendation']}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Receivables Insight
-    status_class = f"status-{receivables_analysis['status']}"
-    st.markdown(f"""
-    <div class="insight-card {status_class}">
-        <div class="insight-header">
-            <h4>Receivables Status</h4>
-        </div>
-        <div class="insight-body">
-            <div class="insight-message">{receivables_analysis['message']}</div>
-            <div class="insight-reco"><strong>Recommendation</strong><br>{receivables_analysis['recommendation']}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Large obligations alert
-    if large_obligations:
-        st.markdown(f"""
-        <div class="alert-banner alert-banner-warning">
-            <strong>Large Obligations Alert</strong><br>
-            {large_obligations['message']}<br>
-            <strong>Action:</strong> {large_obligations['action']}
+        <div class="metric-card">
+            <div class="metric-label">Creances impayees</div>
+            <div class="metric-value">{nb_retards}</div>
+            <div class="metric-label">facture(s)</div>
         </div>
         """, unsafe_allow_html=True)
     
-    # Charts
+    # Graphiques
     st.markdown("---")
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Balance Evolution")
+        st.markdown("#### Evolution du solde")
         fig1 = go.Figure()
         fig1.add_trace(go.Scatter(
-            x=df["date"],
+            x=df["date"], 
             y=df["solde_cumule"],
             mode="lines",
-            line=dict(color="#0a2540", width=2.5),
+            line=dict(color="#1e293b", width=2),
             fill="tozeroy",
-            fillcolor="rgba(10,37,64,0.05)",
-            name="Balance"
+            fillcolor="rgba(30,41,59,0.1)",
+            name="Solde"
         ))
-        fig1.add_hline(y=threshold, line_dash="dash", line_color="#ef4444",
-                       annotation_text=f"Alert Threshold ({threshold:,} MAD)", 
-                       annotation_position="top left")
+        fig1.add_hline(y=seuil, line_dash="dash", line_color="#dc2626",
+                       annotation_text=f"Seuil d'alerte ({seuil:,} MAD)", annotation_position="top left")
         fig1.update_layout(
+            xaxis_title="Date",
+            yaxis_title="Montant (MAD)",
             height=380,
             template="plotly_white",
             hovermode="x unified",
-            plot_bgcolor="white",
-            xaxis=dict(gridcolor="#f0f2f5"),
-            yaxis=dict(gridcolor="#f0f2f5")
+            plot_bgcolor="#f8fafc"
         )
         st.plotly_chart(fig1, use_container_width=True)
     
     with col2:
-        st.markdown("#### Expense Breakdown")
-        expenses = df[df["type"] == "sortie"].groupby("categorie")["montant"].sum().reset_index()
-        expenses.columns = ["Category", "Amount"]
-        expenses["Category"] = expenses["Category"].str.replace("_", " ").str.title()
+        st.markdown("#### Repartition des depenses")
+        sorties_df = df[df["type"] == "sortie"].groupby("categorie")["montant"].sum().reset_index()
+        sorties_df.columns = ["Categorie", "Montant"]
+        sorties_df["Categorie"] = sorties_df["Categorie"].str.replace("_", " ").str.title()
         
         fig2 = px.pie(
-            expenses,
-            values="Amount",
-            names="Category",
-            hole=0.45,
-            color_discrete_sequence=["#0a2540", "#1a3c5e", "#2a4c7e", "#3a5c9e", "#4a6cae"]
+            sorties_df, 
+            values="Montant", 
+            names="Categorie",
+            hole=0.4,
+            color_discrete_sequence=px.colors.sequential.Greys_r
         )
         fig2.update_layout(height=380, template="plotly_white", showlegend=True)
         st.plotly_chart(fig2, use_container_width=True)
     
-    # Monthly chart
-    st.markdown("#### Monthly Cash Flow")
-    df["month"] = df["date"].dt.strftime("%B %Y")
-    monthly = df.groupby(["month", "type"])["montant"].sum().reset_index()
+    st.markdown("#### Encaissements vs Decaissements par mois")
+    df["mois"] = df["date"].dt.strftime("%B %Y")
+    monthly = df.groupby(["mois", "type"])["montant"].sum().reset_index()
     
     fig3 = px.bar(
-        monthly,
-        x="month",
-        y="montant",
+        monthly, 
+        x="mois", 
+        y="montant", 
         color="type",
         barmode="group",
-        color_discrete_map={"entree": "#10b981", "sortie": "#ef4444"},
-        labels={"montant": "Amount (MAD)", "month": "Month", "type": "Type"}
+        color_discrete_map={"entree": "#22c55e", "sortie": "#ef4444"},
+        labels={"montant": "Montant (MAD)", "mois": "Mois", "type": "Type"}
     )
-    fig3.update_layout(height=320, template="plotly_white", plot_bgcolor="white")
+    fig3.update_layout(height=320, template="plotly_white", plot_bgcolor="#f8fafc")
     st.plotly_chart(fig3, use_container_width=True)
 
-# ==================== TAB 2: CASH FLOW ====================
+# ==================== TAB 2: FLUX ====================
 with tabs[1]:
-    st.markdown("#### Transaction History")
+    st.markdown("### Historique des transactions")
     
     col1, col2 = st.columns([3, 1])
     with col1:
-        filter_type = st.selectbox("Filter by Type", ["All", "entree", "sortie"])
+        filtre_type = st.selectbox("Filtrer par type", ["Tous", "entree", "sortie"])
     
-    df_flow = st.session_state.transactions.copy()
-    if filter_type != "All":
-        df_flow = df_flow[df_flow["type"] == filter_type]
+    df_flux = st.session_state.transactions.copy()
+    if filtre_type != "Tous":
+        df_flux = df_flux[df_flux["type"] == filtre_type]
     
-    display_df = df_flow.copy()
-    display_df["date"] = display_df["date"].dt.strftime("%d/%m/%Y")
-    display_df["montant"] = display_df["montant"].apply(lambda x: f"{x:,.0f} MAD")
-    display_df["solde_cumule"] = display_df["solde_cumule"].apply(lambda x: f"{x:,.0f} MAD")
-    display_df = display_df[["date", "type", "categorie", "description", "montant", "solde_cumule"]]
-    display_df.columns = ["Date", "Type", "Category", "Description", "Amount", "Balance"]
+    df_display = df_flux.copy()
+    df_display["date"] = df_display["date"].dt.strftime("%d/%m/%Y")
+    df_display["montant"] = df_display["montant"].apply(lambda x: f"{x:,.0f} MAD")
+    df_display["solde_cumule"] = df_display["solde_cumule"].apply(lambda x: f"{x:,.0f} MAD")
+    df_display = df_display[["date", "type", "categorie", "description", "montant", "solde_cumule"]]
+    df_display.columns = ["Date", "Type", "Categorie", "Description", "Montant", "Solde cumule"]
     
-    st.dataframe(display_df, use_container_width=True, height=450)
+    st.dataframe(df_display, use_container_width=True, height=400)
     
     st.markdown("---")
-    st.markdown("#### Record New Transaction")
+    st.markdown("### Ajouter une transaction")
     
     with st.form("add_transaction"):
         col1, col2 = st.columns(2)
         with col1:
             new_date = st.date_input("Date", datetime.now())
             new_type = st.selectbox("Type", ["entree", "sortie"])
-            new_amount = st.number_input("Amount (MAD)", min_value=0.0, step=1000.0)
+            new_montant = st.number_input("Montant (MAD)", min_value=0.0, step=1000.0)
         with col2:
-            new_category = st.selectbox("Category", [
+            new_categorie = st.selectbox("Categorie", [
                 "vente_client", "acompte", "salaires", "loyer", "matieres_premieres",
                 "electricite", "cnss", "tva", "maintenance", "frais_generaux"
             ])
             new_description = st.text_input("Description")
         
-        submitted = st.form_submit_button("Record Transaction")
+        submitted = st.form_submit_button("Enregistrer")
         
-        if submitted and new_amount > 0 and new_description:
-            last_balance = st.session_state.transactions["solde_cumule"].iloc[-1]
+        if submitted and new_montant > 0 and new_description:
+            dernier_solde = st.session_state.transactions["solde_cumule"].iloc[-1]
             if new_type == "entree":
-                new_balance = last_balance + new_amount
+                nouveau_solde = dernier_solde + new_montant
             else:
-                new_balance = last_balance - new_amount
+                nouveau_solde = dernier_solde - new_montant
             
-            new_row = pd.DataFrame([{
+            nouvelle_ligne = pd.DataFrame([{
                 "date": pd.to_datetime(new_date),
                 "type": new_type,
-                "categorie": new_category,
+                "categorie": new_categorie,
                 "description": new_description,
-                "montant": new_amount,
-                "solde_cumule": new_balance
+                "montant": new_montant,
+                "solde_cumule": nouveau_solde
             }])
             
-            st.session_state.transactions = pd.concat([st.session_state.transactions, new_row], ignore_index=True)
+            st.session_state.transactions = pd.concat([st.session_state.transactions, nouvelle_ligne], ignore_index=True)
             save_transactions(st.session_state.transactions)
-            st.success(f"Transaction recorded - New balance: {new_balance:,.0f} MAD")
+            st.success(f"Transaction ajoutee - Nouveau solde : {nouveau_solde:,.0f} MAD")
             st.cache_data.clear()
             st.rerun()
 
-# ==================== TAB 3: SCHEDULE ====================
+# ==================== TAB 3: ECHANCIER ====================
 with tabs[2]:
-    st.markdown("#### Payment Schedule")
+    st.markdown("### Echeancier")
     
     ech = st.session_state.echeances.copy()
     today = pd.Timestamp(datetime.now().date())
-    large_threshold = st.session_state.seuil_grosse_echeance
+    seuil_grosse = st.session_state.seuil_grosse_echeance
     
-    # Alerts
-    overdue = ech[ech["statut"] == "en_retard"]
-    for _, row in overdue.iterrows():
-        st.markdown(f"""
-        <div class="alert-banner alert-banner-warning">
-            <strong>Overdue Payment</strong><br>
-            {row['tiers']} - {row['description']} - {row['montant']:,.0f} MAD
-        </div>
-        """, unsafe_allow_html=True)
+    retards = ech[ech["statut"] == "en_retard"]
+    for _, row in retards.iterrows():
+        st.markdown(f'<div class="alert-warning">Paiement en retard : {row["tiers"]} - {row["description"]} - {row["montant"]:,.0f} MAD</div>', unsafe_allow_html=True)
     
-    upcoming_large = ech[
-        (ech["date_echeance"] <= today + timedelta(days=7)) & 
-        (ech["statut"] == "en_attente") & 
-        (ech["montant"].abs() >= large_threshold)
-    ]
-    for _, row in upcoming_large.iterrows():
-        st.markdown(f"""
-        <div class="alert-banner alert-banner-warning">
-            <strong>Large Payment Due Soon</strong><br>
-            {row['tiers']} - {row['montant']:,.0f} MAD on {row['date_echeance'].strftime('%d/%m/%Y')}
-        </div>
-        """, unsafe_allow_html=True)
+    prochaines = ech[(ech["date_echeance"] <= today + timedelta(days=7)) & 
+                     (ech["statut"] == "en_attente") & 
+                     (ech["montant"].abs() >= seuil_grosse)]
+    for _, row in prochaines.iterrows():
+        st.markdown(f'<div class="alert-warning">Echeance importante : {row["tiers"]} - {row["montant"]:,.0f} MAD le {row["date_echeance"].strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
     
-    # Filters
     col1, col2 = st.columns(2)
     with col1:
-        filter_schedule_type = st.selectbox("Filter by Type", ["All", "a_encaisser", "a_payer"])
+        filtre_type_ech = st.selectbox("Filtrer par type", ["Tous", "a_encaisser", "a_payer"])
     with col2:
-        filter_status = st.selectbox("Filter by Status", ["All", "en_attente", "en_retard"])
+        filtre_statut = st.selectbox("Filtrer par statut", ["Tous", "en_attente", "en_retard"])
     
-    filtered_ech = ech.copy()
-    if filter_schedule_type != "All":
-        filtered_ech = filtered_ech[filtered_ech["type"] == filter_schedule_type]
-    if filter_status != "All":
-        filtered_ech = filtered_ech[filtered_ech["statut"] == filter_status]
+    ech_filtre = ech.copy()
+    if filtre_type_ech != "Tous":
+        ech_filtre = ech_filtre[ech_filtre["type"] == filtre_type_ech]
+    if filtre_statut != "Tous":
+        ech_filtre = ech_filtre[ech_filtre["statut"] == filtre_statut]
     
-    display_ech = filtered_ech.copy()
-    display_ech["date_echeance"] = display_ech["date_echeance"].dt.strftime("%d/%m/%Y")
-    display_ech["montant"] = display_ech["montant"].apply(lambda x: f"{x:,.0f} MAD")
-    display_ech = display_ech[["date_echeance", "type", "tiers", "description", "montant", "statut"]]
-    display_ech.columns = ["Date", "Type", "Counterparty", "Description", "Amount", "Status"]
+    ech_display = ech_filtre.copy()
+    ech_display["date_echeance"] = ech_display["date_echeance"].dt.strftime("%d/%m/%Y")
+    ech_display["montant"] = ech_display["montant"].apply(lambda x: f"{x:,.0f} MAD")
+    ech_display = ech_display[["date_echeance", "type", "tiers", "description", "montant", "statut"]]
+    ech_display.columns = ["Date", "Type", "Tiers", "Description", "Montant", "Statut"]
     
-    st.dataframe(display_ech, use_container_width=True, height=400)
+    st.dataframe(ech_display, use_container_width=True, height=400)
     
-    # Totals
-    total_to_receive = ech[ech["type"] == "a_encaisser"]["montant"].sum()
-    total_to_pay = ech[ech["type"] == "a_payer"]["montant"].sum()
+    total_encaisser = ech[ech["type"] == "a_encaisser"]["montant"].sum()
+    total_payer = ech[ech["type"] == "a_payer"]["montant"].sum()
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total to Receive", f"{total_to_receive:,.0f} MAD")
-    col2.metric("Total to Pay", f"{total_to_pay:,.0f} MAD")
-    col3.metric("Net Position", f"{total_to_receive - total_to_pay:,.0f} MAD")
+    col1.metric("Total a encaisser", f"{total_encaisser:,.0f} MAD")
+    col2.metric("Total a payer", f"{total_payer:,.0f} MAD")
+    col3.metric("Solde net previsionnel", f"{total_encaisser - total_payer:,.0f} MAD")
     
     st.markdown("---")
-    st.markdown("#### Add New Obligation")
+    st.markdown("### Ajouter une echeance")
     
-    with st.form("add_schedule"):
+    with st.form("add_echeance"):
         col1, col2 = st.columns(2)
         with col1:
-            new_schedule_date = st.date_input("Due Date", datetime.now() + timedelta(days=7))
-            new_schedule_type = st.selectbox("Type", ["a_encaisser", "a_payer"])
-            new_schedule_amount = st.number_input("Amount (MAD)", min_value=0.0, step=1000.0)
+            new_ech_date = st.date_input("Date d'echeance", datetime.now() + timedelta(days=7))
+            new_ech_type = st.selectbox("Type", ["a_encaisser", "a_payer"])
+            new_ech_montant = st.number_input("Montant (MAD)", min_value=0.0, step=1000.0)
         with col2:
-            new_schedule_counterparty = st.text_input("Counterparty")
-            new_schedule_description = st.text_input("Description")
-            new_schedule_status = st.selectbox("Status", ["en_attente", "en_retard"])
+            new_ech_tiers = st.text_input("Tiers (client / fournisseur)")
+            new_ech_description = st.text_input("Description")
+            new_ech_statut = st.selectbox("Statut", ["en_attente", "en_retard"])
         
-        submitted_schedule = st.form_submit_button("Record Obligation")
+        submitted_ech = st.form_submit_button("Enregistrer")
         
-        if submitted_schedule and new_schedule_amount > 0 and new_schedule_counterparty:
-            new_schedule_row = pd.DataFrame([{
-                "date_echeance": pd.to_datetime(new_schedule_date),
-                "type": new_schedule_type,
-                "tiers": new_schedule_counterparty,
-                "description": new_schedule_description,
-                "montant": new_schedule_amount,
-                "statut": new_schedule_status
+        if submitted_ech and new_ech_montant > 0 and new_ech_tiers:
+            nouvelle_ech = pd.DataFrame([{
+                "date_echeance": pd.to_datetime(new_ech_date),
+                "type": new_ech_type,
+                "tiers": new_ech_tiers,
+                "description": new_ech_description,
+                "montant": new_ech_montant,
+                "statut": new_ech_statut
             }])
             
-            st.session_state.echeances = pd.concat([st.session_state.echeances, new_schedule_row], ignore_index=True)
+            st.session_state.echeances = pd.concat([st.session_state.echeances, nouvelle_ech], ignore_index=True)
             save_echeances(st.session_state.echeances)
-            st.success("Obligation recorded successfully")
+            st.success("Echeance ajoutee avec succes")
             st.cache_data.clear()
             st.rerun()
 
-# ==================== TAB 4: FORECAST ====================
+# ==================== TAB 4: PREVISIONS ====================
 with tabs[3]:
-    st.markdown("#### 8-Week Cash Forecast")
+    st.markdown("### Prevision de tresorerie sur 8 semaines")
     
-    forecast_data = st.session_state.echeances.copy()
-    forecast_data["week"] = forecast_data["date_echeance"].dt.strftime("W%W")
+    ech_prev = st.session_state.echeances.copy()
+    ech_prev["semaine"] = ech_prev["date_echeance"].dt.strftime("W%W")
     
-    weekly_inflows = forecast_data[forecast_data["type"] == "a_encaisser"].groupby("week")["montant"].sum()
-    weekly_outflows = forecast_data[forecast_data["type"] == "a_payer"].groupby("week")["montant"].sum()
+    encaissements_sem = ech_prev[ech_prev["type"] == "a_encaisser"].groupby("semaine")["montant"].sum()
+    decaissements_sem = ech_prev[ech_prev["type"] == "a_payer"].groupby("semaine")["montant"].sum()
     
-    all_weeks = sorted(set(weekly_inflows.index) | set(weekly_outflows.index))
-    all_weeks = all_weeks[:8]
+    toutes_semaines = sorted(set(encaissements_sem.index) | set(decaissements_sem.index))
+    toutes_semaines = toutes_semaines[:8]
     
-    forecast_df = pd.DataFrame({
-        "Week": all_weeks,
-        "Inflows": [weekly_inflows.get(w, 0) for w in all_weeks],
-        "Outflows": [weekly_outflows.get(w, 0) for w in all_weeks],
+    df_prev = pd.DataFrame({
+        "Semaine": toutes_semaines,
+        "Encaissements": [encaissements_sem.get(s, 0) for s in toutes_semaines],
+        "Decaissements": [decaissements_sem.get(s, 0) for s in toutes_semaines],
     })
-    forecast_df["Net Flow"] = forecast_df["Inflows"] - forecast_df["Outflows"]
+    df_prev["Solde net"] = df_prev["Encaissements"] - df_prev["Decaissements"]
     
-    starting_balance = st.session_state.transactions["solde_cumule"].iloc[-1]
-    forecast_df["Cumulative Balance"] = starting_balance + forecast_df["Net Flow"].cumsum()
+    solde_initial = st.session_state.transactions["solde_cumule"].iloc[-1]
+    df_prev["Solde cumule"] = solde_initial + df_prev["Solde net"].cumsum()
     
-    threshold = st.session_state.seuil_alerte
+    seuil = st.session_state.seuil_alerte
     
-    # Forecast analysis
-    forecast_analysis = analyze_forecast(forecast_df, threshold, starting_balance)
-    status_class = f"status-{forecast_analysis['status']}"
+    # Analyse previsionnelle automatique
+    analyse_prev = analyser_prevision(df_prev, seuil, solde_initial)
     
+    # Affichage du commentaire previsionnel
+    card_class = f"comment-card-{analyse_prev['type']}"
     st.markdown(f"""
-    <div class="insight-card {status_class}" style="margin-bottom: 20px;">
-        <div class="insight-header">
-            <h4>Forecast Analysis</h4>
-        </div>
-        <div class="insight-body">
-            <div class="insight-message">{forecast_analysis['message']}</div>
-            <div class="insight-reco"><strong>Recommendation</strong><br>{forecast_analysis['recommendation']}</div>
-        </div>
+    <div class="{card_class}">
+        <div class="comment-title">ANALYSE PREVISIONNELLE</div>
+        <div class="comment-message">{analyse_prev['message']}</div>
+        <div class="comment-recommendation"><strong>Recommandation :</strong> {analyse_prev['recommandation']}</div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Charts
+    # Graphiques
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Weekly Flows")
-        bar_df = forecast_df.melt(id_vars=["Week"], value_vars=["Inflows", "Outflows"],
-                                   var_name="Type", value_name="Amount")
-        fig_bar = px.bar(bar_df, x="Week", y="Amount", color="Type",
+        st.markdown("#### Encaissements vs Decaissements")
+        df_bar = df_prev.melt(id_vars=["Semaine"], value_vars=["Encaissements", "Decaissements"],
+                              var_name="Type", value_name="Montant")
+        fig_bar = px.bar(df_bar, x="Semaine", y="Montant", color="Type",
                          barmode="group",
-                         color_discrete_map={"Inflows": "#10b981", "Outflows": "#ef4444"})
-        fig_bar.update_layout(height=380, template="plotly_white", plot_bgcolor="white")
+                         color_discrete_map={"Encaissements": "#22c55e", "Decaissements": "#ef4444"})
+        fig_bar.update_layout(height=380, template="plotly_white", plot_bgcolor="#f8fafc")
         st.plotly_chart(fig_bar, use_container_width=True)
     
     with col2:
-        st.markdown("#### Cumulative Forecast")
+        st.markdown("#### Evolution du solde previsionnel")
         fig_line = go.Figure()
         fig_line.add_trace(go.Scatter(
-            x=forecast_df["Week"],
-            y=forecast_df["Cumulative Balance"],
+            x=df_prev["Semaine"], 
+            y=df_prev["Solde cumule"],
             mode="lines+markers",
-            line=dict(color="#0a2540", width=2.5),
-            marker=dict(size=7, color="#0a2540"),
-            text=[f"{v:,.0f}" for v in forecast_df["Cumulative Balance"]],
+            line=dict(color="#1e293b", width=2),
+            marker=dict(size=6, color="#1e293b"),
+            text=[f"{v:,.0f}" for v in df_prev["Solde cumule"]],
             textposition="top center",
             textfont=dict(size=11)
         ))
-        fig_line.add_hline(y=threshold, line_dash="dash", line_color="#ef4444",
-                           annotation_text=f"Alert Threshold ({threshold:,} MAD)")
-        fig_line.update_layout(height=380, template="plotly_white", plot_bgcolor="white")
+        fig_line.add_hline(y=seuil, line_dash="dash", line_color="#dc2626",
+                           annotation_text=f"Seuil d'alerte ({seuil:,} MAD)")
+        fig_line.update_layout(height=380, template="plotly_white", plot_bgcolor="#f8fafc")
         st.plotly_chart(fig_line, use_container_width=True)
     
-    # Detailed table
-    st.markdown("#### Forecast Details")
-    display_forecast = forecast_df.copy()
-    for col in ["Inflows", "Outflows", "Net Flow", "Cumulative Balance"]:
-        display_forecast[col] = display_forecast[col].apply(lambda x: f"{x:,.0f} MAD")
-    st.dataframe(display_forecast, use_container_width=True)
-    
-    # Key metrics
-    st.markdown("#### Key Forecast Metrics")
-    col1, col2, col3 = st.columns(3)
-    
-    min_balance = forecast_df["Cumulative Balance"].min()
-    max_balance = forecast_df["Cumulative Balance"].max()
-    avg_net_flow = forecast_df["Net Flow"].mean()
-    
-    col1.metric("Minimum Projected Balance", f"{min_balance:,.0f} MAD",
-                delta=f"{min_balance - starting_balance:+,.0f} MAD" if min_balance != starting_balance else None)
-    col2.metric("Maximum Projected Balance", f"{max_
+    st.markdown("#### Detail des previsions")
+    df_display_prev = df_prev.copy()
+    for col in ["Encaissements", "Decaissements", "Solde net", "Solde cumule"]:
+        df_display_prev[col] = df_display_prev[col].apply(lambda x: f"{x:,.0f} MAD")
+    st.dataframe(df_display_prev, use_container_width=True)
