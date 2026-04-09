@@ -1,0 +1,37 @@
+date_echeance,type,tiers,description,montant,statut
+2025-04-01,a_payer,Salaires,Salaires employés avril 2025,45000,en_attente
+2025-04-02,a_encaisser,BTP Maroc SARL,Facture #F001 solde restant dû,25000,en_retard
+2025-04-03,a_payer,Loyer Ain Sebaa,Loyer usine avril 2025,8000,en_attente
+2025-04-04,a_encaisser,Constructions Atlas,Facture #F002 paiement final,30000,en_retard
+2025-04-05,a_payer,SteelMa,Facture matières premières #SM-220,22000,en_attente
+2025-04-07,a_encaisser,Sonacos,Acompte commande #C012 solde,30000,en_attente
+2025-04-09,a_payer,ONE Électricité,Facture électricité avril,5000,en_attente
+2025-04-10,a_encaisser,Alfapar SARL,Facture #F007 règlement,40000,en_retard
+2025-04-11,a_payer,MetalPro Casablanca,Facture aluminium #MP-145,15000,en_attente
+2025-04-14,a_encaisser,Groupe Chaabi BTP,Facture #F008 paiement,55000,en_attente
+2025-04-15,a_payer,CNSS,Cotisations sociales avril,9200,en_attente
+2025-04-16,a_encaisser,BTP Plus SARL,Facture #F009 règlement,35000,en_attente
+2025-04-17,a_payer,SteelMa,Facture acier commande urgente #SM-221,35000,en_attente
+2025-04-18,a_encaisser,CimentPlus,Facture #F010 solde,28000,en_attente
+2025-04-22,a_payer,DGI - TVA,Déclaration TVA mars 2025,26000,en_attente
+2025-04-23,a_encaisser,Sotrameg,Facture #F011 paiement,38000,en_attente
+2025-04-24,a_payer,Assurance Wafa,Prime assurance trimestrielle,6800,en_attente
+2025-04-25,a_encaisser,Constructions Atlas,Nouvelle commande #C016 acompte,45000,en_attente
+2025-04-28,a_payer,MetalPro Casablanca,Commande profilés acier #MP-150,18000,en_attente
+2025-04-30,a_encaisser,BTP Maroc SARL,Nouvelle commande #C017,60000,en_attente
+2025-05-01,a_payer,Salaires,Salaires employés mai 2025,45000,en_attente
+2025-05-02,a_payer,Loyer Ain Sebaa,Loyer usine mai 2025,8000,en_attente
+2025-05-05,a_encaisser,Sonacos,Commande #C015 solde,40000,en_attente
+2025-05-06,a_payer,SteelMa,Approvisionnement mensuel acier,25000,en_attente
+2025-05-07,a_encaisser,Alfapar SARL,Commande #C018 acompte,30000,en_attente
+2025-05-09,a_payer,ONE Électricité,Facture électricité mai,5000,en_attente
+2025-05-12,a_encaisser,Groupe Chaabi BTP,Facture #F012 paiement,70000,en_attente
+2025-05-14,a_payer,Maintenance industrielle,Révision annuelle machines,15000,en_attente
+2025-05-15,a_payer,CNSS,Cotisations sociales mai,9200,en_attente
+2025-05-16,a_encaisser,BTP Plus SARL,Commande #C019 règlement,42000,en_attente
+2025-05-20,a_payer,DGI - TVA,Déclaration TVA avril 2025,28000,en_attente
+2025-05-21,a_encaisser,CimentPlus,Commande #C020 acompte,35000,en_attente
+2025-05-23,a_payer,MetalPro Casablanca,Facture cuivre et aluminium #MP-155,12000,en_attente
+2025-05-26,a_encaisser,Sotrameg,Commande #C021 règlement,50000,en_attente
+2025-05-28,a_payer,Frais divers,Frais généraux mai,5000,en_attente
+2025-05-30,a_encaisser,BTP Maroc SARL,Commande #C022 solde,65000,en_attente
