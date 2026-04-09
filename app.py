@@ -13,12 +13,10 @@ st.set_page_config(
 # ==================== STYLE CSS EPURE PROFESSIONNEL ====================
 st.markdown("""
 <style>
-    /* Fond général */
     .stApp {
         background-color: #f8fafc;
     }
     
-    /* Sidebar professionnelle */
     [data-testid="stSidebar"] {
         background-color: #ffffff;
         border-right: 1px solid #e2e8f0;
@@ -28,7 +26,6 @@ st.markdown("""
         color: #1e293b !important;
     }
     
-    /* Cartes métriques */
     .metric-card {
         background-color: #ffffff;
         border-radius: 12px;
@@ -51,7 +48,6 @@ st.markdown("""
         letter-spacing: 0.5px;
     }
     
-    /* Alertes professionnelles */
     .alert-critical {
         background-color: #fef2f2;
         border-left: 4px solid #dc2626;
@@ -82,7 +78,16 @@ st.markdown("""
         margin-bottom: 16px;
     }
     
-    /* Titres */
+    .alert-info {
+        background-color: #eff6ff;
+        border-left: 4px solid #3b82f6;
+        padding: 14px 18px;
+        border-radius: 8px;
+        color: #1e40af;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+    
     .main-header {
         font-size: 24px;
         font-weight: 600;
@@ -99,13 +104,6 @@ st.markdown("""
         padding-bottom: 16px;
     }
     
-    /* Séparateur */
-    hr {
-        margin: 20px 0;
-        border-color: #e2e8f0;
-    }
-    
-    /* Boutons */
     .stButton > button {
         background-color: #1e293b;
         color: white;
@@ -122,19 +120,6 @@ st.markdown("""
         border: none;
     }
     
-    /* Dataframe */
-    .stDataFrame {
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-    }
-    
-    /* Inputs */
-    .stTextInput > div > div > input, .stSelectbox > div > div, .stDateInput > div > div {
-        border-radius: 6px;
-        border-color: #e2e8f0;
-    }
-    
-    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 32px;
         border-bottom: 1px solid #e2e8f0;
@@ -151,12 +136,32 @@ st.markdown("""
         color: #1e293b;
         border-bottom: 2px solid #1e293b;
     }
+    
+    .comment-card {
+        background-color: #f1f5f9;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+        border-left: 4px solid #64748b;
+    }
+    
+    .comment-text {
+        font-size: 14px;
+        color: #1e293b;
+        line-height: 1.5;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ==================== PARAMETRES ====================
-SEUIL_ALERTE = 50000
-SEUIL_GROSSE_ECHEANCE = 30000
+# Initialisation des seuils dans session_state pour persistance
+if "seuil_alerte" not in st.session_state:
+    st.session_state.seuil_alerte = 50000
+if "seuil_grosse_echeance" not in st.session_state:
+    st.session_state.seuil_grosse_echeance = 30000
+
+SEUIL_ALERTE = st.session_state.seuil_alerte
+SEUIL_GROSSE_ECHEANCE = st.session_state.seuil_grosse_echeance
 
 # ==================== CHARGEMENT DES DONNEES ====================
 @st.cache_data
@@ -183,6 +188,98 @@ def save_transactions(df):
 def save_echeances(df):
     df.to_csv("echeances.csv", index=False)
 
+# ==================== FONCTIONS D'ANALYSE INTELLIGENTE ====================
+def generer_commentaire_tresorerie(solde, seuil, df_echeances):
+    """Génère un commentaire automatique basé sur la situation"""
+    if solde < seuil:
+        return {
+            "type": "critical",
+            "message": f"Situation critique : Le solde actuel de {solde:,.0f} MAD est inférieur au seuil de {seuil:,} MAD. Une action immédiate est nécessaire pour éviter une rupture de trésorerie.",
+            "recommandation": "Prioriser les encaissements clients et reporter les dépenses non urgentes."
+        }
+    elif solde < seuil * 1.5:
+        return {
+            "type": "warning",
+            "message": f"Situation fragile : Le solde de {solde:,.0f} MAD est proche du seuil d'alerte de {seuil:,} MAD. La marge de manœuvre est limitée.",
+            "recommandation": "Surveiller attentivement les échéances à venir et accélérer les recouvrements."
+        }
+    elif solde > seuil * 3:
+        return {
+            "type": "success",
+            "message": f"Situation excellente : Le solde de {solde:,.0f} MAD offre une marge confortable de {solde - seuil:,.0f} MAD au-dessus du seuil d'alerte.",
+            "recommandation": "Des opportunités d'investissement ou de remboursement anticipé peuvent être envisagées."
+        }
+    else:
+        return {
+            "type": "info",
+            "message": f"Situation stable : Le solde de {solde:,.0f} MAD est correct par rapport au seuil de {seuil:,} MAD.",
+            "recommandation": "Maintenir le suivi régulier des flux et des échéances."
+        }
+
+def generer_commentaire_prevision(df_prev, seuil, solde_initial):
+    """Génère un commentaire sur la prévision"""
+    semaines_critiques = df_prev[df_prev["Solde cumulé"] < seuil]
+    solde_final = df_prev["Solde cumulé"].iloc[-1] if not df_prev.empty else solde_initial
+    
+    if len(semaines_critiques) > 0:
+        premiere_semaine = semaines_critiques.iloc[0]["Semaine"]
+        return {
+            "type": "critical",
+            "message": f"Rupture prévue : Le solde passera sous le seuil de {seuil:,} MAD à partir de la semaine {premiere_semaine}. Le solde final prévu est de {solde_final:,.0f} MAD.",
+            "recommandation": "Anticiper un besoin de financement ou renégocier les délais de paiement fournisseurs."
+        }
+    elif solde_final < seuil * 1.2:
+        return {
+            "type": "warning",
+            "message": f"Tendance négative : Bien que le solde reste au-dessus du seuil, la prévision finale de {solde_final:,.0f} MAD est proche du seuil d'alerte.",
+            "recommandation": "Maîtriser les dépenses et suivre l'évolution des encaissements."
+        }
+    else:
+        return {
+            "type": "success",
+            "message": f"Perspectives favorables : Le solde devrait se maintenir au-dessus du seuil sur l'ensemble de l'horizon, avec un solde final de {solde_final:,.0f} MAD.",
+            "recommandation": "La situation est sous contrôle, poursuivre la gestion rigoureuse."
+        }
+
+def generer_commentaire_retards(df_echeances):
+    """Génère un commentaire sur les retards clients"""
+    retards = df_echeances[df_echeances["statut"] == "en_retard"]
+    montant_retards = retards["montant"].sum()
+    nb_retards = len(retards)
+    
+    if nb_retards == 0:
+        return {
+            "type": "success",
+            "message": "Aucun retard de paiement client à signaler.",
+            "recommandation": "Les délais de recouvrement sont respectés."
+        }
+    elif nb_retards <= 2:
+        return {
+            "type": "warning",
+            "message": f"{nb_retards} retard(s) de paiement pour un total de {montant_retards:,.0f} MAD.",
+            "recommandation": "Relancer rapidement les clients concernés."
+        }
+    else:
+        return {
+            "type": "critical",
+            "message": f"{nb_retards} retards de paiement représentant {montant_retards:,.0f} MAD. Impact significatif sur la trésorerie.",
+            "recommandation": "Mettre en place un plan de recouvrement renforcé et revoir les conditions de crédit clients."
+        }
+
+def generer_commentaire_echeances(df_echeances, seuil_grosse):
+    """Génère un commentaire sur les échéances importantes"""
+    grosses_echeances = df_echeances[(df_echeances["montant"].abs() >= seuil_grosse) & (df_echeances["statut"] == "en_attente")]
+    
+    if len(grosses_echeances) == 0:
+        return None
+    
+    total_grosses = grosses_echeances["montant"].abs().sum()
+    return {
+        "type": "warning",
+        "message": f"{len(grosses_echeances)} échéance(s) importante(s) à venir pour un total de {total_grosses:,.0f} MAD.",
+        "recommandation": "Anticiper ces échéances dans la planification de trésorerie."
+    }
+
 # ==================== SIDEBAR ====================
 with st.sidebar:
     st.markdown("### MarocIndustrie SARL")
@@ -203,10 +300,33 @@ with st.sidebar:
         st.error(f"{solde_actuel:,.0f} MAD")
     
     st.markdown("---")
-    st.markdown("**Paramètres**")
-    st.markdown(f"Seuil d'alerte : {SEUIL_ALERTE:,} MAD")
-    st.markdown(f"Horizon prévision : 8 semaines")
-    st.caption("Données : Janvier - Mars 2025")
+    st.markdown("**Paramètres modifiables**")
+    
+    nouveau_seuil = st.number_input(
+        "Seuil d'alerte (MAD)", 
+        min_value=10000, 
+        max_value=200000, 
+        value=st.session_state.seuil_alerte,
+        step=5000,
+        help="En dessous de ce seuil, une alerte critique sera déclenchée"
+    )
+    if nouveau_seuil != st.session_state.seuil_alerte:
+        st.session_state.seuil_alerte = nouveau_seuil
+        st.cache_data.clear()
+        st.rerun()
+    
+    nouveau_seuil_grosse = st.number_input(
+        "Seuil grosse échéance (MAD)", 
+        min_value=10000, 
+        max_value=200000, 
+        value=st.session_state.seuil_grosse_echeance,
+        step=5000,
+        help="Au-dessus de ce seuil, une échéance est considérée comme importante"
+    )
+    if nouveau_seuil_grosse != st.session_state.seuil_grosse_echeance:
+        st.session_state.seuil_grosse_echeance = nouveau_seuil_grosse
+        st.cache_data.clear()
+        st.rerun()
 
 # ==================== HEADER ====================
 st.markdown('<div class="main-header">MarocIndustrie SARL</div>', unsafe_allow_html=True)
@@ -223,17 +343,33 @@ with tabs[0]:
     total_sorties = df[df["type"] == "sortie"]["montant"].sum()
     
     ech = st.session_state.echeances
-    nb_retards = len(ech[ech["statut"] == "en_retard"])
-    montant_retards = ech[ech["statut"] == "en_retard"]["montant"].sum()
+    seuil = st.session_state.seuil_alerte
+    seuil_grosse = st.session_state.seuil_grosse_echeance
     
-    # Alertes
-    if solde_actuel < SEUIL_ALERTE:
-        st.markdown(f'<div class="alert-critical">Alerte critique : Le solde de {solde_actuel:,.0f} MAD est inférieur au seuil de {SEUIL_ALERTE:,} MAD</div>', unsafe_allow_html=True)
+    # Commentaires intelligents
+    commentaire_treso = generer_commentaire_tresorerie(solde_actuel, seuil, ech)
+    commentaire_retards = generer_commentaire_retards(ech)
+    commentaire_echeances = generer_commentaire_echeances(ech, seuil_grosse)
+    
+    # Affichage des commentaires
+    if commentaire_treso["type"] == "critical":
+        st.markdown(f'<div class="alert-critical"><strong>Analyse trésorerie</strong><br>{commentaire_treso["message"]}<br><br><strong>Recommandation :</strong> {commentaire_treso["recommandation"]}</div>', unsafe_allow_html=True)
+    elif commentaire_treso["type"] == "warning":
+        st.markdown(f'<div class="alert-warning"><strong>Analyse trésorerie</strong><br>{commentaire_treso["message"]}<br><br><strong>Recommandation :</strong> {commentaire_treso["recommandation"]}</div>', unsafe_allow_html=True)
+    elif commentaire_treso["type"] == "success":
+        st.markdown(f'<div class="alert-success"><strong>Analyse trésorerie</strong><br>{commentaire_treso["message"]}<br><br><strong>Recommandation :</strong> {commentaire_treso["recommandation"]}</div>', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div class="alert-success">Trésorerie saine : {solde_actuel:,.0f} MAD au-dessus du seuil d\'alerte</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="alert-info"><strong>Analyse trésorerie</strong><br>{commentaire_treso["message"]}<br><br><strong>Recommandation :</strong> {commentaire_treso["recommandation"]}</div>', unsafe_allow_html=True)
     
-    if nb_retards > 0:
-        st.markdown(f'<div class="alert-warning">Attention : {nb_retards} paiement(s) client en retard pour un total de {montant_retards:,.0f} MAD</div>', unsafe_allow_html=True)
+    if commentaire_retards["type"] == "critical":
+        st.markdown(f'<div class="alert-critical"><strong>Analyse retards clients</strong><br>{commentaire_retards["message"]}<br><br><strong>Recommandation :</strong> {commentaire_retards["recommandation"]}</div>', unsafe_allow_html=True)
+    elif commentaire_retards["type"] == "warning":
+        st.markdown(f'<div class="alert-warning"><strong>Analyse retards clients</strong><br>{commentaire_retards["message"]}<br><br><strong>Recommandation :</strong> {commentaire_retards["recommandation"]}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="alert-success"><strong>Analyse retards clients</strong><br>{commentaire_retards["message"]}<br><br><strong>Recommandation :</strong> {commentaire_retards["recommandation"]}</div>', unsafe_allow_html=True)
+    
+    if commentaire_echeances:
+        st.markdown(f'<div class="alert-warning"><strong>Analyse échéances</strong><br>{commentaire_echeances["message"]}<br><br><strong>Recommandation :</strong> {commentaire_echeances["recommandation"]}</div>', unsafe_allow_html=True)
     
     # Indicateurs
     st.markdown("### Indicateurs clés")
@@ -264,6 +400,7 @@ with tabs[0]:
         """, unsafe_allow_html=True)
     
     with col4:
+        nb_retards = len(ech[ech["statut"] == "en_retard"])
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-label">Créances impayées</div>
@@ -288,16 +425,15 @@ with tabs[0]:
             fillcolor="rgba(30,41,59,0.1)",
             name="Solde"
         ))
-        fig1.add_hline(y=SEUIL_ALERTE, line_dash="dash", line_color="#dc2626",
-                       annotation_text="Seuil d'alerte", annotation_position="top left")
+        fig1.add_hline(y=seuil, line_dash="dash", line_color="#dc2626",
+                       annotation_text=f"Seuil d'alerte ({seuil:,} MAD)", annotation_position="top left")
         fig1.update_layout(
             xaxis_title="Date",
             yaxis_title="Montant (MAD)",
             height=380,
             template="plotly_white",
             hovermode="x unified",
-            plot_bgcolor="#f8fafc",
-            title_font_size=14
+            plot_bgcolor="#f8fafc"
         )
         st.plotly_chart(fig1, use_container_width=True)
     
@@ -401,15 +537,17 @@ with tabs[2]:
     
     ech = st.session_state.echeances.copy()
     today = pd.Timestamp(datetime.now().date())
+    seuil_grosse = st.session_state.seuil_grosse_echeance
     
-    # Alertes
+    # Alertes sur retards existants
     retards = ech[ech["statut"] == "en_retard"]
     for _, row in retards.iterrows():
         st.markdown(f'<div class="alert-warning">Paiement en retard : {row["tiers"]} - {row["description"]} - {row["montant"]:,.0f} MAD</div>', unsafe_allow_html=True)
     
+    # Alertes sur grosses échéances à venir
     prochaines = ech[(ech["date_echeance"] <= today + timedelta(days=7)) & 
                      (ech["statut"] == "en_attente") & 
-                     (ech["montant"] >= SEUIL_GROSSE_ECHEANCE)]
+                     (ech["montant"].abs() >= seuil_grosse)]
     for _, row in prochaines.iterrows():
         st.markdown(f'<div class="alert-warning">Echéance importante : {row["tiers"]} - {row["montant"]:,.0f} MAD le {row["date_echeance"].strftime("%d/%m/%Y")}</div>', unsafe_allow_html=True)
     
@@ -499,12 +637,16 @@ with tabs[3]:
     solde_initial = st.session_state.transactions["solde_cumule"].iloc[-1]
     df_prev["Solde cumulé"] = solde_initial + df_prev["Solde net"].cumsum()
     
-    # Alerte prévisionnelle
-    semaines_critiques = df_prev[df_prev["Solde cumulé"] < SEUIL_ALERTE]
-    if not semaines_critiques.empty:
-        st.markdown(f'<div class="alert-critical">Alerte prévisionnelle : Le solde passera sous le seuil de {SEUIL_ALERTE:,} MAD dans les {len(semaines_critiques)} prochaines semaines</div>', unsafe_allow_html=True)
+    seuil = st.session_state.seuil_alerte
+    
+    # Commentaire prévisionnel intelligent
+    commentaire_prev = generer_commentaire_prevision(df_prev, seuil, solde_initial)
+    if commentaire_prev["type"] == "critical":
+        st.markdown(f'<div class="alert-critical"><strong>Analyse prévisionnelle</strong><br>{commentaire_prev["message"]}<br><br><strong>Recommandation :</strong> {commentaire_prev["recommandation"]}</div>', unsafe_allow_html=True)
+    elif commentaire_prev["type"] == "warning":
+        st.markdown(f'<div class="alert-warning"><strong>Analyse prévisionnelle</strong><br>{commentaire_prev["message"]}<br><br><strong>Recommandation :</strong> {commentaire_prev["recommandation"]}</div>', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div class="alert-success">Solde prévisionnel maintenu au-dessus du seuil d\'alerte sur l\'horizon de 8 semaines</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="alert-success"><strong>Analyse prévisionnelle</strong><br>{commentaire_prev["message"]}<br><br><strong>Recommandation :</strong> {commentaire_prev["recommandation"]}</div>', unsafe_allow_html=True)
     
     # Graphiques
     col1, col2 = st.columns(2)
@@ -532,40 +674,12 @@ with tabs[3]:
             textposition="top center",
             textfont=dict(size=11)
         ))
-        fig_line.add_hline(y=SEUIL_ALERTE, line_dash="dash", line_color="#dc2626",
-                           annotation_text="Seuil d'alerte")
+        fig_line.add_hline(y=seuil, line_dash="dash", line_color="#dc2626",
+                           annotation_text=f"Seuil d'alerte ({seuil:,} MAD)")
         fig_line.update_layout(height=380, template="plotly_white", plot_bgcolor="#f8fafc")
         st.plotly_chart(fig_line, use_container_width=True)
     
     # Tableau détaillé
     st.markdown("#### Détail des prévisions")
     df_display_prev = df_prev.copy()
-    for col in ["Encaissements", "Décaissements", "Solde net", "Solde cumulé"]:
-        df_display_prev[col] = df_display_prev[col].apply(lambda x: f"{x:,.0f} MAD")
-    st.dataframe(df_display_prev, use_container_width=True)
-    
-    # Hypothèses
-    with st.expander("Hypothèses du modèle de prévision"):
-        st.markdown(f"""
-        **Modèle de prévision**
-        
-        | Paramètre | Valeur |
-        |-----------|--------|
-        | Solde initial | {solde_initial:,.0f} MAD |
-        | Seuil d'alerte | {SEUIL_ALERTE:,} MAD |
-        | Seuil grosse échéance | {SEUIL_GROSSE_ECHEANCE:,} MAD |
-        | Horizon de prévision | 8 semaines |
-        
-        **Méthodologie**
-        - Les prévisions intègrent l'ensemble des échéances enregistrées
-        - Les encaissements clients sont basés sur les factures à recevoir
-        - Les décaissements incluent les charges sociales, fournisseurs et TVA
-        
-        **Limites**
-        - Les nouveaux contrats non encore signés ne sont pas intégrés
-        - Les retards de paiement client sont basés sur l'historique constaté
-        """)
-
-# ==================== FOOTER ====================
-st.markdown("---")
-st.caption("MarocIndustrie SARL - Mini-application de gestion de trésorerie | Données fictives à usage pédagogique")
+    for col in ["Encaissements
