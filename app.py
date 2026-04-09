@@ -127,32 +127,23 @@ st.markdown("""
     .status-success { border-left: 4px solid #10b981; }
     .status-info { border-left: 4px solid #3b82f6; }
     
-    .alert-critical {
-        background: #fef2f2;
-        border: 1px solid #fee2e2;
-        border-radius: 14px;
-        padding: 14px 18px;
-        margin-bottom: 20px;
-        color: #991b1b;
-        font-size: 13px;
-    }
-    
-    .alert-warning {
+    .alert-card {
         background: #fffbeb;
         border: 1px solid #fef3c7;
         border-radius: 14px;
-        padding: 14px 18px;
-        margin-bottom: 20px;
-        color: #92400e;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        display: inline-block;
+        width: auto;
     }
     
-    .alert-success {
-        background: #f0fdf4;
-        border: 1px solid #dcfce7;
+    .alert-card-red {
+        background: #fef2f2;
+        border: 1px solid #fee2e2;
         border-radius: 14px;
-        padding: 14px 18px;
-        margin-bottom: 20px;
-        color: #166534;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        color: #991b1b;
     }
     
     .positive-amount {
@@ -163,6 +154,21 @@ st.markdown("""
     .negative-amount {
         color: #ef4444;
         font-weight: 600;
+    }
+    
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 30px;
+        border: 1px solid #eef2f6;
+    }
+    
+    .form-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0a2540;
+        margin-bottom: 16px;
     }
     
     .stTabs [data-baseweb="tab-list"] {
@@ -230,17 +236,26 @@ st.markdown("""
         color: #0a2540;
     }
     
-    .espace-entre-cartes {
-        margin-bottom: 24px;
-    }
-    
     hr {
         margin: 24px 0;
         border-color: #eef2f6;
     }
     
-    .row-spacing {
-        margin-bottom: 20px;
+    .alert-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #fef2f2;
+        border-radius: 40px;
+        padding: 6px 14px;
+        margin-right: 12px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: #991b1b;
+    }
+    
+    .alert-badge-warning {
+        background: #fffbeb;
+        color: #92400e;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -438,9 +453,6 @@ with onglets[0]:
         </div>
         """, unsafe_allow_html=True)
     
-    # Espacement
-    st.markdown('<div class="row-spacing"></div>', unsafe_allow_html=True)
-    
     col1, col2 = st.columns(2)
     
     with col1:
@@ -466,8 +478,6 @@ with onglets[0]:
             </div>
         </div>
         """, unsafe_allow_html=True)
-    
-    st.markdown('<div class="row-spacing"></div>', unsafe_allow_html=True)
     
     st.markdown("#### Évolution du solde")
     fig1 = go.Figure()
@@ -508,44 +518,12 @@ with onglets[0]:
 
 # ==================== ONGLET 2: FLUX DE TRESORERIE ====================
 with onglets[1]:
-    st.markdown("#### Historique des transactions")
-    
-    col1, col2 = st.columns([2, 2])
-    with col1:
-        filtre_type = st.selectbox("Filtrer par type", ["Tous", "entree", "sortie"])
-    with col2:
-        categories = ["Toutes"] + sorted(st.session_state.transactions["categorie"].unique().tolist())
-        filtre_categorie = st.selectbox("Filtrer par catégorie", categories)
-    
-    df_flux = st.session_state.transactions.copy()
-    if filtre_type != "Tous":
-        df_flux = df_flux[df_flux["type"] == filtre_type]
-    if filtre_categorie != "Toutes":
-        df_flux = df_flux[df_flux["categorie"] == filtre_categorie]
-    
-    df_flux["date"] = df_flux["date"].dt.strftime("%d/%m/%Y")
-    df_flux["Montant"] = df_flux.apply(
-        lambda row: f'<span class="{"positive-amount" if row["type"] == "entree" else "negative-amount"}">{row["montant"]:,.0f} MAD</span>',
-        axis=1
-    )
-    df_flux["Solde"] = df_flux["solde_cumule"].apply(lambda x: f"{x:,.0f} MAD")
-    df_affichage = df_flux[["date", "type", "categorie", "description", "Montant", "Solde"]]
-    df_affichage.columns = ["Date", "Type", "Catégorie", "Description", "Montant", "Solde"]
-    
-    st.write(df_affichage.to_html(escape=False, index=False), unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        csv_transactions = convert_df_to_csv(st.session_state.transactions)
-        st.download_button(
-            label="Télécharger les transactions (CSV)",
-            data=csv_transactions,
-            file_name="transactions.csv",
-            mime="text/csv"
-        )
-    
-    st.markdown("---")
-    st.markdown("#### Ajouter une transaction")
+    # Formulaire EN HAUT
+    st.markdown("""
+    <div class="form-container">
+        <div class="form-title">Ajouter une transaction</div>
+    </div>
+    """, unsafe_allow_html=True)
     
     with st.form("add_transaction"):
         col1, col2 = st.columns(2)
@@ -583,34 +561,104 @@ with onglets[1]:
             st.success(f"Transaction ajoutée - Nouveau solde : {nouveau_solde:,.0f} MAD")
             st.cache_data.clear()
             st.rerun()
+    
+    st.markdown("---")
+    st.markdown("#### Historique des transactions")
+    
+    col1, col2 = st.columns([2, 2])
+    with col1:
+        filtre_type = st.selectbox("Filtrer par type", ["Tous", "entree", "sortie"])
+    with col2:
+        categories = ["Toutes"] + sorted(st.session_state.transactions["categorie"].unique().tolist())
+        filtre_categorie = st.selectbox("Filtrer par catégorie", categories)
+    
+    df_flux = st.session_state.transactions.copy()
+    if filtre_type != "Tous":
+        df_flux = df_flux[df_flux["type"] == filtre_type]
+    if filtre_categorie != "Toutes":
+        df_flux = df_flux[df_flux["categorie"] == filtre_categorie]
+    
+    df_flux["date"] = df_flux["date"].dt.strftime("%d/%m/%Y")
+    df_flux["Montant"] = df_flux.apply(
+        lambda row: f'<span class="{"positive-amount" if row["type"] == "entree" else "negative-amount"}">{row["montant"]:,.0f} MAD</span>',
+        axis=1
+    )
+    df_flux["Solde"] = df_flux["solde_cumule"].apply(lambda x: f"{x:,.0f} MAD")
+    df_affichage = df_flux[["date", "type", "categorie", "description", "Montant", "Solde"]]
+    df_affichage.columns = ["Date", "Type", "Catégorie", "Description", "Montant", "Solde"]
+    
+    st.write(df_affichage.to_html(escape=False, index=False), unsafe_allow_html=True)
+    
+    csv_transactions = convert_df_to_csv(st.session_state.transactions)
+    st.download_button(
+        label="Télécharger les transactions (CSV)",
+        data=csv_transactions,
+        file_name="transactions.csv",
+        mime="text/csv"
+    )
 
 # ==================== ONGLET 3: ECHEANCIER ====================
 with onglets[2]:
-    st.markdown("#### Échéancier des paiements")
+    # Formulaire EN HAUT
+    st.markdown("""
+    <div class="form-container">
+        <div class="form-title">Ajouter une échéance</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.form("add_echeance"):
+        col1, col2 = st.columns(2)
+        with col1:
+            nouvelle_date_ech = st.date_input("Date d'échéance", datetime.now() + timedelta(days=7))
+            nouveau_type_ech = st.selectbox("Type", ["a_encaisser", "a_payer"])
+            nouveau_montant_ech = st.number_input("Montant (MAD)", min_value=0.0, step=1000.0)
+        with col2:
+            nouveau_tiers = st.text_input("Tiers (client / fournisseur)")
+            nouvelle_desc_ech = st.text_input("Description")
+            nouveau_statut = st.selectbox("Statut", ["en_attente", "en_retard"])
+        
+        valide_ech = st.form_submit_button("Enregistrer l'échéance")
+        
+        if valide_ech and nouveau_montant_ech > 0 and nouveau_tiers:
+            montant_final = nouveau_montant_ech if nouveau_type_ech == "a_encaisser" else -nouveau_montant_ech
+            nouvelle_ligne_ech = pd.DataFrame([{
+                "date_echeance": pd.to_datetime(nouvelle_date_ech),
+                "type": nouveau_type_ech,
+                "tiers": nouveau_tiers,
+                "description": nouvelle_desc_ech,
+                "montant": montant_final,
+                "statut": nouveau_statut
+            }])
+            
+            st.session_state.echeances = pd.concat([st.session_state.echeances, nouvelle_ligne_ech], ignore_index=True)
+            save_echeances(st.session_state.echeances)
+            st.success("Échéance ajoutée avec succès")
+            st.cache_data.clear()
+            st.rerun()
+    
+    st.markdown("---")
+    st.markdown("#### Liste des échéances")
     
     ech = st.session_state.echeances.copy()
     aujourdhui = pd.Timestamp(datetime.now().date())
     seuil_grosse = st.session_state.seuil_grosse_echeance
     
+    # Alertes sous forme de badges compacts
     retards = ech[ech["statut"] == "en_retard"]
-    for _, row in retards.iterrows():
-        st.markdown(f"""
-        <div class="alert-warning">
-            <strong>Paiement en retard</strong><br>
-            {row['tiers']} - {row['description']} - <span class="negative-amount">{abs(row['montant']):,.0f} MAD</span>
-        </div>
-        """, unsafe_allow_html=True)
+    if len(retards) > 0:
+        cols = st.columns(min(len(retards), 4))
+        for idx, (_, row) in enumerate(retards.iterrows()):
+            with cols[idx % 4]:
+                st.markdown(f'<div class="alert-badge">⚠️ {row["tiers"]} | {abs(row["montant"]):,.0f} MAD</div>', unsafe_allow_html=True)
     
     echeances_proches = ech[(ech["date_echeance"] <= aujourdhui + timedelta(days=7)) & 
                             (ech["statut"] == "en_attente") & 
                             (abs(ech["montant"]) >= seuil_grosse)]
-    for _, row in echeances_proches.iterrows():
-        st.markdown(f"""
-        <div class="alert-warning">
-            <strong>Grosse échéance à venir</strong><br>
-            {row['tiers']} - {abs(row['montant']):,.0f} MAD le {row['date_echeance'].strftime('%d/%m/%Y')}
-        </div>
-        """, unsafe_allow_html=True)
+    if len(echeances_proches) > 0:
+        cols = st.columns(min(len(echeances_proches), 4))
+        for idx, (_, row) in enumerate(echeances_proches.iterrows()):
+            with cols[idx % 4]:
+                st.markdown(f'<div class="alert-badge alert-badge-warning">🔔 {row["tiers"]} | {abs(row["montant"]):,.0f} MAD</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -651,39 +699,6 @@ with onglets[2]:
     col1.metric("Total à encaisser", f"{total_encaisser:,.0f} MAD")
     col2.metric("Total à payer", f"{total_payer:,.0f} MAD")
     col3.metric("Position nette", f"{total_encaisser - total_payer:,.0f} MAD")
-    
-    st.markdown("---")
-    st.markdown("#### Ajouter une échéance")
-    
-    with st.form("add_echeance"):
-        col1, col2 = st.columns(2)
-        with col1:
-            nouvelle_date_ech = st.date_input("Date d'échéance", datetime.now() + timedelta(days=7))
-            nouveau_type_ech = st.selectbox("Type", ["a_encaisser", "a_payer"])
-            nouveau_montant_ech = st.number_input("Montant (MAD)", min_value=0.0, step=1000.0)
-        with col2:
-            nouveau_tiers = st.text_input("Tiers (client / fournisseur)")
-            nouvelle_desc_ech = st.text_input("Description")
-            nouveau_statut = st.selectbox("Statut", ["en_attente", "en_retard"])
-        
-        valide_ech = st.form_submit_button("Enregistrer l'échéance")
-        
-        if valide_ech and nouveau_montant_ech > 0 and nouveau_tiers:
-            montant_final = nouveau_montant_ech if nouveau_type_ech == "a_encaisser" else -nouveau_montant_ech
-            nouvelle_ligne_ech = pd.DataFrame([{
-                "date_echeance": pd.to_datetime(nouvelle_date_ech),
-                "type": nouveau_type_ech,
-                "tiers": nouveau_tiers,
-                "description": nouvelle_desc_ech,
-                "montant": montant_final,
-                "statut": nouveau_statut
-            }])
-            
-            st.session_state.echeances = pd.concat([st.session_state.echeances, nouvelle_ligne_ech], ignore_index=True)
-            save_echeances(st.session_state.echeances)
-            st.success("Échéance ajoutée avec succès")
-            st.cache_data.clear()
-            st.rerun()
 
 # ==================== ONGLET 4: PREVISIONS ====================
 with onglets[3]:
@@ -692,7 +707,6 @@ with onglets[3]:
     donnees_prevision = st.session_state.echeances.copy()
     donnees_prevision["semaine"] = donnees_prevision["date_echeance"].dt.strftime("S%W")
     
-    # CORRECTION DE L'ERREUR : on calcule d'abord les sommes, puis on applique abs()
     encaissements_hebdo = donnees_prevision[donnees_prevision["type"] == "a_encaisser"].groupby("semaine")["montant"].sum()
     decaissements_hebdo_temp = donnees_prevision[donnees_prevision["type"] == "a_payer"].groupby("semaine")["montant"].sum()
     decaissements_hebdo = decaissements_hebdo_temp.abs()
