@@ -1,0 +1,47 @@
+date,type,categorie,description,montant,solde_cumule
+2025-01-02,entree,vente_client,Facture #F001 - Client BTP Maroc SARL,85000,205000
+2025-01-05,sortie,salaires,Salaires employés janvier 2025,45000,160000
+2025-01-07,sortie,loyer,Loyer usine Ain Sebaa janvier,8000,152000
+2025-01-08,entree,acompte,Acompte commande #C012 - Sonacos,30000,182000
+2025-01-10,sortie,matieres_premieres,Achat acier - Fournisseur SteelMa,22000,160000
+2025-01-13,sortie,electricite,Facture électricité ONE janvier,4500,155500
+2025-01-15,entree,vente_client,Facture #F002 - Constructions Atlas,60000,215500
+2025-01-17,sortie,matieres_premieres,Achat aluminium - MetalPro Casablanca,15000,200500
+2025-01-20,sortie,cnss,Cotisations CNSS janvier,9200,191300
+2025-01-22,entree,vente_client,Facture #F003 - BTP Plus SARL,45000,236300
+2025-01-24,sortie,frais_generaux,Frais transport et livraisons,3200,233100
+2025-01-27,sortie,tva,Déclaration TVA T4 2024,18500,214600
+2025-01-29,entree,acompte,Acompte commande #C013 - Alfapar,20000,234600
+2025-01-31,sortie,frais_generaux,Fournitures bureau et atelier,2100,232500
+2025-02-03,entree,vente_client,Facture #F004 - Groupe Chaabi BTP,92000,324500
+2025-02-05,sortie,salaires,Salaires employés février 2025,45000,279500
+2025-02-06,sortie,loyer,Loyer usine Ain Sebaa février,8000,271500
+2025-02-07,sortie,matieres_premieres,Achat acier inoxydable - SteelMa,28000,243500
+2025-02-10,entree,vente_client,Facture #F005 - Sotrameg,38000,281500
+2025-02-12,sortie,electricite,Facture électricité ONE février,5200,276300
+2025-02-14,entree,acompte,Acompte commande #C014 - CimentPlus,25000,301300
+2025-02-17,sortie,maintenance,Maintenance machines atelier,12000,289300
+2025-02-19,sortie,cnss,Cotisations CNSS février,9200,280100
+2025-02-20,entree,vente_client,Facture #F006 - BTP Maroc SARL,55000,335100
+2025-02-21,sortie,matieres_premieres,Achat cuivre - MetalPro,8500,326600
+2025-02-24,sortie,frais_generaux,Frais déplacements commerciaux,4100,322500
+2025-02-26,entree,vente_client,Facture #F007 - Constructions Atlas,70000,392500
+2025-02-27,sortie,tva,Déclaration TVA janvier 2025,22000,370500
+2025-02-28,sortie,frais_generaux,Assurance usine et équipements,6800,363700
+2025-03-03,sortie,salaires,Salaires employés mars 2025,45000,318700
+2025-03-04,entree,vente_client,Facture #F008 - Alfapar SARL,48000,366700
+2025-03-05,sortie,loyer,Loyer usine Ain Sebaa mars,8000,358700
+2025-03-07,sortie,matieres_premieres,Achat acier - SteelMa commande urgente,35000,323700
+2025-03-10,entree,acompte,Acompte commande #C015 - Groupe Chaabi,40000,363700
+2025-03-12,sortie,electricite,Facture électricité ONE mars,4800,358900
+2025-03-14,entree,vente_client,Facture #F009 - Sonacos,62000,420900
+2025-03-17,sortie,cnss,Cotisations CNSS mars,9200,411700
+2025-03-18,sortie,matieres_premieres,Achat boulonnerie et fixations,5500,406200
+2025-03-20,sortie,frais_generaux,Frais téléphone et internet,1800,404400
+2025-03-21,entree,vente_client,Facture #F010 - CimentPlus,35000,439400
+2025-03-24,sortie,tva,Déclaration TVA février 2025,24500,414900
+2025-03-25,sortie,maintenance,Révision chariot élévateur,7500,407400
+2025-03-26,entree,vente_client,Facture #F011 - BTP Plus SARL,55000,462400
+2025-03-27,sortie,matieres_premieres,Achat profilés acier - MetalPro,18000,444400
+2025-03-28,sortie,frais_generaux,Frais comptable et audit,5000,439400
+2025-03-31,sortie,frais_generaux,Frais divers fin de mois,3200,436200
