@@ -812,4 +812,163 @@ with onglets[2]:
         cols = st.columns(min(len(retards), 4))
         for idx, (_, row) in enumerate(retards.iterrows()):
             with cols[idx % 4]:
-                st.markdown(f'<div class="alert-badge">⚠️
+                st.markdown(f'<div class="alert-badge">⚠️ {row["tiers"]} | {abs(row["montant"]):,.0f} MAD</div>', unsafe_allow_html=True)
+    
+    echeances_proches = ech[(ech["date_echeance"] <= aujourdhui + timedelta(days=7)) & 
+                            (ech["statut"] == "en_attente") & 
+                            (abs(ech["montant"]) >= seuil_grosse)]
+    if len(echeances_proches) > 0:
+        st.markdown("**Grosses échéances à venir**")
+        cols = st.columns(min(len(echeances_proches), 4))
+        for idx, (_, row) in enumerate(echeances_proches.iterrows()):
+            with cols[idx % 4]:
+                st.markdown(f'<div class="alert-badge alert-badge-warning">🔔 {row["tiers"]} | {abs(row["montant"]):,.0f} MAD</div>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        filtre_type_ech = st.selectbox("Filtrer par type", ["Tous", "a_encaisser", "a_payer"])
+    with col2:
+        filtre_statut = st.selectbox("Filtrer par statut", ["Tous", "en_attente", "en_retard"])
+    
+    ech_filtre = ech.copy()
+    if filtre_type_ech != "Tous":
+        ech_filtre = ech_filtre[ech_filtre["type"] == filtre_type_ech]
+    if filtre_statut != "Tous":
+        ech_filtre = ech_filtre[ech_filtre["statut"] == filtre_statut]
+    
+    html_table = '<table style="width:100%; border-collapse: collapse;">'
+    html_table += '<thead><tr style="border-bottom: 2px solid #eef2f6; text-align: left;">'
+    html_table += '<th style="padding: 12px 8px;">Date</th>'
+    html_table += '<th style="padding: 12px 8px;">Type</th>'
+    html_table += '<th style="padding: 12px 8px;">Tiers</th>'
+    html_table += '<th style="padding: 12px 8px;">Description</th>'
+    html_table += '<th style="padding: 12px 8px;">Montant</th>'
+    html_table += '<th style="padding: 12px 8px;">Statut</th>'
+    html_table += '</tr></thead><tbody>'
+    
+    for _, row in ech_filtre.iterrows():
+        row_class = "row-encaisser" if row["type"] == "a_encaisser" else "row-payer"
+        badge_class = "badge-encaisser" if row["type"] == "a_encaisser" else "badge-payer"
+        badge_text = "À encaisser" if row["type"] == "a_encaisser" else "À payer"
+        amount_class = "positive-amount" if row["type"] == "a_encaisser" else "negative-amount"
+        
+        statut_text = "En attente" if row["statut"] == "en_attente" else "En retard"
+        statut_color = "#f59e0b" if row["statut"] == "en_retard" else "#10b981"
+        
+        html_table += f'<tr class="{row_class}" style="border-bottom: 1px solid #eef2f6;">'
+        html_table += f'<td style="padding: 12px 8px;">{row["date_echeance"].strftime("%d/%m/%Y")}</td>'
+        html_table += f'<td style="padding: 12px 8px;"><span class="{badge_class}">{badge_text}</span></td>'
+        html_table += f'<td style="padding: 12px 8px; font-weight: 500;">{row["tiers"]}</td>'
+        html_table += f'<td style="padding: 12px 8px; color: #6b7a8a;">{row["description"]}</td>'
+        html_table += f'<td style="padding: 12px 8px;" class="{amount_class}">{abs(row["montant"]):,.0f} MAD</td>'
+        html_table += f'<td style="padding: 12px 8px;"><span style="background: {statut_color}; color: white; padding: 4px 12px; border-radius: 40px; font-size: 11px;">{statut_text}</span></td>'
+        html_table += '</tr>'
+    
+    html_table += '</tbody></table>'
+    
+    st.markdown(html_table, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        csv_echeances = convert_df_to_csv(st.session_state.echeances)
+        st.download_button(
+            label="Télécharger les échéances (CSV)",
+            data=csv_echeances,
+            file_name="echeances.csv",
+            mime="text/csv"
+        )
+    
+    total_encaisser = ech[ech["type"] == "a_encaisser"]["montant"].sum()
+    total_payer = ech[ech["type"] == "a_payer"]["montant"].abs().sum()
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total à encaisser", f"{total_encaisser:,.0f} MAD")
+    col2.metric("Total à payer", f"{total_payer:,.0f} MAD")
+    col3.metric("Position nette", f"{total_encaisser - total_payer:,.0f} MAD")
+
+# ==================== ONGLET 4: PREVISIONS ====================
+with onglets[3]:
+    st.markdown("#### Prévision de trésorerie sur 8 semaines")
+    
+    donnees_prevision = st.session_state.echeances.copy()
+    donnees_prevision["semaine"] = donnees_prevision["date_echeance"].dt.strftime("S%W")
+    
+    encaissements_hebdo = donnees_prevision[donnees_prevision["type"] == "a_encaisser"].groupby("semaine")["montant"].sum()
+    decaissements_hebdo_temp = donnees_prevision[donnees_prevision["type"] == "a_payer"].groupby("semaine")["montant"].sum()
+    decaissements_hebdo = decaissements_hebdo_temp.abs()
+    
+    toutes_semaines = sorted(set(encaissements_hebdo.index) | set(decaissements_hebdo.index))
+    toutes_semaines = toutes_semaines[:8]
+    
+    df_prevision = pd.DataFrame({
+        "Semaine": toutes_semaines,
+        "Encaissements": [encaissements_hebdo.get(s, 0) for s in toutes_semaines],
+        "Décaissements": [decaissements_hebdo.get(s, 0) for s in toutes_semaines],
+    })
+    df_prevision["Flux net"] = df_prevision["Encaissements"] - df_prevision["Décaissements"]
+    
+    solde_initial = st.session_state.transactions["solde_cumule"].iloc[-1]
+    df_prevision["Solde Cumule"] = solde_initial + df_prevision["Flux net"].cumsum()
+    
+    seuil = st.session_state.seuil_alerte
+    analyse_prevision = analyser_prevision(df_prevision, seuil, solde_initial)
+    status_class = f"status-{analyse_prevision['status']}"
+    
+    st.markdown(f"""
+    <div class="insight-card {status_class}" style="margin-bottom: 24px;">
+        <div class="insight-header"><h4>Analyse prévisionnelle</h4></div>
+        <div class="insight-body">
+            <div class="insight-message">{analyse_prevision['message']}</div>
+            <div class="insight-recommendation"><strong>Recommandation</strong><br>{analyse_prevision['recommandation']}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### Flux hebdomadaires")
+        df_bar = df_prevision.melt(id_vars=["Semaine"], value_vars=["Encaissements", "Décaissements"],
+                                   var_name="Type", value_name="Montant")
+        fig_bar = px.bar(df_bar, x="Semaine", y="Montant", color="Type",
+                         barmode="group",
+                         color_discrete_map={"Encaissements": "#10b981", "Décaissements": "#ef4444"})
+        fig_bar.update_layout(height=350, template="plotly_white", margin=dict(l=0, r=0, t=30, b=0))
+        st.plotly_chart(fig_bar, use_container_width=True)
+    
+    with col2:
+        st.markdown("#### Évolution du solde prévisionnel")
+        fig_line = go.Figure()
+        fig_line.add_trace(go.Scatter(
+            x=df_prevision["Semaine"], y=df_prevision["Solde Cumule"],
+            mode="lines+markers",
+            line=dict(color="#0a2540", width=2.5),
+            marker=dict(size=7, color="#0a2540"),
+            text=[f"{v:,.0f}" for v in df_prevision["Solde Cumule"]],
+            textposition="top center"
+        ))
+        fig_line.add_hline(y=seuil, line_dash="dash", line_color="#ef4444",
+                           annotation_text=f"Seuil d'alerte ({seuil:,} MAD)")
+        fig_line.update_layout(height=350, template="plotly_white", margin=dict(l=0, r=0, t=30, b=0))
+        st.plotly_chart(fig_line, use_container_width=True)
+    
+    st.markdown("#### Détail des prévisions")
+    df_affichage_prev = df_prevision.copy()
+    for col in ["Encaissements", "Décaissements", "Flux net", "Solde Cumule"]:
+        df_affichage_prev[col] = df_affichage_prev[col].apply(lambda x: f"{x:,.0f} MAD")
+    st.dataframe(df_affichage_prev, use_container_width=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        csv_previsions = convert_df_to_csv(df_prevision)
+        st.download_button(
+            label="Télécharger les prévisions (CSV)",
+            data=csv_previsions,
+            file_name="previsions.csv",
+            mime="text/csv"
+        )
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Solde minimum projeté", f"{df_prevision['Solde Cumule'].min():,.0f} MAD")
+    col2.metric("Solde maximum projeté", f"{df_prevision['Solde Cumule'].max():,.0f} MAD")
+    col3.metric("Flux net moyen hebdomadaire", f"{df_prevision['Flux net'].mean():,.0f} MAD")
