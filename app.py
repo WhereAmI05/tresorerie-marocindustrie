@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import io
+import os
 
 st.set_page_config(
     page_title="MarocIndustrie - Gestion de Trésorerie",
@@ -11,6 +12,139 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ==================== GESTION DE LA SESSION ====================
+if "authentifie" not in st.session_state:
+    st.session_state.authentifie = False
+if "transactions" not in st.session_state:
+    st.session_state.transactions = None
+if "echeances" not in st.session_state:
+    st.session_state.echeances = None
+
+# ==================== FONCTIONS D AUTHENTIFICATION ====================
+def verifier_login(email, mot_de_passe):
+    # Identifiants par défaut (modifiables)
+    identifiants = {
+        "tresorier@marocindustrie.ma": "tresorier123",
+        "admin@marocindustrie.ma": "admin123",
+        "directeur@marocindustrie.ma": "directeur123"
+    }
+    return identifiants.get(email) == mot_de_passe
+
+def charger_donnees_defaut():
+    """Charge les données par défaut depuis les fichiers CSV"""
+    try:
+        df_transactions = pd.read_csv("transactions.csv", parse_dates=["date"])
+        df_echeances = pd.read_csv("echeances.csv", parse_dates=["date_echeance"])
+        return df_transactions, df_echeances
+    except:
+        return None, None
+
+# ==================== PAGE DE LOGIN ====================
+if not st.session_state.authentifie:
+    st.markdown("""
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            border: 1px solid #eef2f6;
+        }
+        .login-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0a2540;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .login-subtitle {
+            font-size: 13px;
+            color: #6b7a8a;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+    </style>
+    
+    <div class="login-container">
+        <div class="login-title">MarocIndustrie SARL</div>
+        <div class="login-subtitle">Accès tableau de bord trésorerie</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.form("login_form"):
+        email = st.text_input("Email professionnel")
+        mot_de_passe = st.text_input("Mot de passe", type="password")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            submit = st.form_submit_button("Se connecter", use_container_width=True)
+        
+        if submit:
+            if verifier_login(email, mot_de_passe):
+                st.session_state.authentifie = True
+                # Chargement des données après connexion
+                df_trans, df_ech = charger_donnees_defaut()
+                if df_trans is not None and df_ech is not None:
+                    st.session_state.transactions = df_trans.copy()
+                    st.session_state.echeances = df_ech.copy()
+                st.rerun()
+            else:
+                st.error("Email ou mot de passe incorrect")
+    
+    st.markdown("""
+    <div style="text-align: center; margin-top: 20px; color: #8b9eb0; font-size: 12px;">
+        <strong>Comptes de démonstration</strong><br>
+        tresorier@marocindustrie.ma / tresorier123<br>
+        admin@marocindustrie.ma / admin123
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.stop()
+
+# ==================== FONCTIONS DE GESTION DES DONNEES ====================
+def sauvegarder_transactions(df):
+    df.to_csv("transactions.csv", index=False)
+
+def sauvegarder_echeances(df):
+    df.to_csv("echeances.csv", index=False)
+
+def importer_transactions(fichier):
+    """Importe un fichier CSV de transactions"""
+    try:
+        df = pd.read_csv(fichier, parse_dates=["date"])
+        # Vérification des colonnes requises
+        colonnes_requises = ["date", "type", "categorie", "description", "montant", "solde_cumule"]
+        for col in colonnes_requises:
+            if col not in df.columns:
+                st.error(f"Colonne manquante : {col}")
+                return None
+        return df
+    except Exception as e:
+        st.error(f"Erreur lors de l'import : {e}")
+        return None
+
+def importer_echeances(fichier):
+    """Importe un fichier CSV d'échéances"""
+    try:
+        df = pd.read_csv(fichier, parse_dates=["date_echeance"])
+        colonnes_requises = ["date_echeance", "type", "tiers", "description", "montant", "statut"]
+        for col in colonnes_requises:
+            if col not in df.columns:
+                st.error(f"Colonne manquante : {col}")
+                return None
+        return df
+    except Exception as e:
+        st.error(f"Erreur lors de l'import : {e}")
+        return None
+
+# ==================== CHARGEMENT INITIAL ====================
+if st.session_state.transactions is None or st.session_state.echeances is None:
+    df_trans, df_ech = charger_donnees_defaut()
+    if df_trans is not None and df_ech is not None:
+        st.session_state.transactions = df_trans
+        st.session_state.echeances = df_ech
 
 # ==================== DESIGN SYSTEM PREMIUM ====================
 st.markdown("""
@@ -49,6 +183,16 @@ st.markdown("""
         border-radius: 40px;
         font-size: 12px;
         color: #2c7da0;
+    }
+    
+    .logout-btn {
+        background: none;
+        border: 1px solid #eef2f6;
+        padding: 8px 16px;
+        border-radius: 40px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #6b7a8a;
     }
     
     .kpi-card {
@@ -127,16 +271,6 @@ st.markdown("""
     .status-success { border-left: 4px solid #10b981; }
     .status-info { border-left: 4px solid #3b82f6; }
     
-    .alert-card {
-        background: #fffbeb;
-        border: 1px solid #fef3c7;
-        border-radius: 14px;
-        padding: 12px 16px;
-        margin-bottom: 16px;
-        display: inline-block;
-        width: auto;
-    }
-    
     .positive-amount {
         color: #10b981;
         font-weight: 600;
@@ -160,6 +294,14 @@ st.markdown("""
         font-weight: 600;
         color: #0a2540;
         margin-bottom: 16px;
+    }
+    
+    .import-container {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 30px;
+        border: 2px dashed #cbd5e1;
     }
     
     .stTabs [data-baseweb="tab-list"] {
@@ -249,7 +391,6 @@ st.markdown("""
         color: #92400e;
     }
     
-    /* Styles pour les lignes du tableau échéancier */
     .row-encaisser {
         background-color: rgba(16, 185, 129, 0.05);
         border-left: 3px solid #10b981;
@@ -287,31 +428,6 @@ if "seuil_alerte" not in st.session_state:
     st.session_state.seuil_alerte = 50000
 if "seuil_grosse_echeance" not in st.session_state:
     st.session_state.seuil_grosse_echeance = 30000
-
-# ==================== CHARGEMENT DES DONNEES ====================
-@st.cache_data
-def load_transactions():
-    df = pd.read_csv("transactions.csv", parse_dates=["date"])
-    return df
-
-@st.cache_data
-def load_echeances():
-    df = pd.read_csv("echeances.csv", parse_dates=["date_echeance"])
-    return df
-
-transactions = load_transactions()
-echeances = load_echeances()
-
-if "transactions" not in st.session_state:
-    st.session_state.transactions = transactions.copy()
-if "echeances" not in st.session_state:
-    st.session_state.echeances = echeances.copy()
-
-def save_transactions(df):
-    df.to_csv("transactions.csv", index=False)
-
-def save_echeances(df):
-    df.to_csv("echeances.csv", index=False)
 
 # ==================== FONCTIONS D ANALYSE ====================
 def analyser_position_tresorerie(solde, seuil):
@@ -353,15 +469,24 @@ def convert_df_to_csv(df):
     return df.to_csv(index=False).encode('utf-8')
 
 # ==================== HEADER ====================
-st.markdown(f"""
-<div class="top-nav">
-    <div>
-        <div class="company-name">MarocIndustrie SARL</div>
-        <div class="company-sub">Ain Sebaa · Casablanca · Fabrication métallique</div>
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.markdown(f"""
+    <div class="top-nav" style="margin-bottom: 0;">
+        <div>
+            <div class="company-name">MarocIndustrie SARL</div>
+            <div class="company-sub">Ain Sebaa · Casablanca · Fabrication métallique</div>
+        </div>
+        <div class="badge">Tableau de bord trésorerie</div>
     </div>
-    <div class="badge">Tableau de bord trésorerie</div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+
+with col2:
+    if st.button("Déconnexion", use_container_width=True):
+        st.session_state.authentifie = False
+        st.session_state.transactions = None
+        st.session_state.echeances = None
+        st.rerun()
 
 # ==================== SIDEBAR ====================
 with st.sidebar:
@@ -426,6 +551,34 @@ with st.sidebar:
 
 # ==================== ONGLETS ====================
 onglets = st.tabs(["Tableau de bord", "Flux de trésorerie", "Échéancier", "Prévisions"])
+
+# ==================== SECTION IMPORT (visible sur tous les onglets) ====================
+with st.expander("📂 Importer des données (CSV)", expanded=False):
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Importer les transactions**")
+        fichier_transactions = st.file_uploader("Choisir un fichier CSV pour les transactions", type=["csv"], key="import_trans")
+        if fichier_transactions is not None:
+            df_import = importer_transactions(fichier_transactions)
+            if df_import is not None:
+                st.session_state.transactions = df_import
+                sauvegarder_transactions(df_import)
+                st.success(f"✅ {len(df_import)} transactions importées avec succès!")
+                st.cache_data.clear()
+                st.rerun()
+    
+    with col2:
+        st.markdown("**Importer les échéances**")
+        fichier_echeances = st.file_uploader("Choisir un fichier CSV pour les échéances", type=["csv"], key="import_ech")
+        if fichier_echeances is not None:
+            df_import = importer_echeances(fichier_echeances)
+            if df_import is not None:
+                st.session_state.echeances = df_import
+                sauvegarder_echeances(df_import)
+                st.success(f"✅ {len(df_import)} échéances importées avec succès!")
+                st.cache_data.clear()
+                st.rerun()
 
 # ==================== ONGLET 1: TABLEAU DE BORD ====================
 with onglets[0]:
@@ -578,7 +731,7 @@ with onglets[1]:
             }])
             
             st.session_state.transactions = pd.concat([st.session_state.transactions, nouvelle_ligne], ignore_index=True)
-            save_transactions(st.session_state.transactions)
+            sauvegarder_transactions(st.session_state.transactions)
             st.success(f"Transaction ajoutée - Nouveau solde : {nouveau_solde:,.0f} MAD")
             st.cache_data.clear()
             st.rerun()
@@ -651,7 +804,7 @@ with onglets[2]:
             }])
             
             st.session_state.echeances = pd.concat([st.session_state.echeances, nouvelle_ligne_ech], ignore_index=True)
-            save_echeances(st.session_state.echeances)
+            sauvegarder_echeances(st.session_state.echeances)
             st.success("Échéance ajoutée avec succès")
             st.cache_data.clear()
             st.rerun()
